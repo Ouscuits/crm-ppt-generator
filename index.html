@@ -1317,17 +1317,22 @@ function renderBrandTab(){
   renderBrandCustomers();
 }
 // === ZARA TAB ===
+var ZARA_SUBS=['Maag','Ecru','Vilet','Dub'];
 function getZaraRows(){
   return dashFiltered.filter(function(r){return r.brand==='Zara';});
 }
+function getZaraSubRows(){
+  return dashFiltered.filter(function(r){return r.brand==='Zara'&&ZARA_SUBS.indexOf(r.subProgram)>-1;});
+}
 function renderZaraTab(){
-  var rows=getZaraRows();
-  renderZaraChart('chartZaraSubs',rows,'subProgram','salesHKD','bar');
-  renderZaraChart('chartZaraSubsQty',rows,'subProgram','qty','bar');
-  renderZaraSubProduct(rows);
-  renderZaraSubCountry(rows);
-  renderZaraTrend(rows);
-  renderCustomers('chartZaraCustomers',rows);
+  var subRows=getZaraSubRows();
+  var allRows=getZaraRows();
+  renderZaraChart('chartZaraSubs',subRows,'subProgram','salesHKD','bar');
+  renderZaraChart('chartZaraSubsQty',subRows,'subProgram','qty','bar');
+  renderZaraSubProduct(subRows);
+  renderZaraSubCountry(subRows);
+  renderZaraTrend(subRows);
+  renderCustomers('chartZaraCustomers',allRows);
 }
 
 function renderZaraChart(canvasId,rows,groupKey,valueKey,type){
