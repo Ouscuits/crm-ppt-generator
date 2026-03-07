@@ -142,7 +142,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
         <div class="dash-card"><h3>Sales by Country (HKD)</h3><canvas id="chartCountry"></canvas></div>
         <div class="dash-card"><h3>Sales by Brand (HKD)</h3><canvas id="chartBrand"></canvas></div>
         <div class="dash-card"><h3>Sales by Product Type (HKD)</h3><canvas id="chartProduct"></canvas></div>
-        <div class="dash-card"><h3>Quantity by Company (Pcs)</h3><canvas id="chartCompany"></canvas></div>
+        <div class="dash-card"><h3>RFID vs Other Products (HKD)</h3><canvas id="chartRfid"></canvas></div>
         <div class="dash-card dash-full"><h3>Monthly Sales Trend (HKD)</h3><canvas id="chartTrend"></canvas></div>
         <div class="dash-card dash-full"><h3>Top 15 Customers by Sales (HKD)</h3><canvas id="chartVendors"></canvas></div>
       </div>
@@ -1015,7 +1015,7 @@ function renderDashboard(){
   renderChart('chartCountry','country','salesHKD','bar');
   renderChart('chartBrand','brand','salesHKD','bar');
   renderChart('chartProduct','productType','salesHKD','doughnut');
-  renderChart('chartCompany','company','qty','bar');
+  renderRfid();
   renderTrend();
   renderVendors();
 }
@@ -1081,6 +1081,25 @@ function renderChart(canvasId,groupKey,valueKey,type){
   };
   if(type==='bar'){cfg.data.datasets[0].label=valueKey==='salesHKD'?'HKD':'Pcs';}
   dashCharts[canvasId]=new Chart(ctx,cfg);
+}
+
+function renderRfid(){
+  var rfid=0,other=0;
+  dashFiltered.forEach(function(r){
+    if(r.productType.toUpperCase()==='RFID') rfid+=r.salesHKD;
+    else other+=r.salesHKD;
+  });
+  if(dashCharts['chartRfid']){dashCharts['chartRfid'].destroy();}
+  var ctx=document.getElementById('chartRfid').getContext('2d');
+  dashCharts['chartRfid']=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:['RFID','Other Products'],datasets:[{data:[rfid,other],backgroundColor:['#E21B1B','#1565C0'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'right',labels:{font:{family:'DM Sans',size:12}}},
+        tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+fmtNum(ctx.raw)+' ('+Math.round(ctx.raw/(rfid+other)*100)+'%)';}}}
+      }
+    }
+  });
 }
 
 function renderTrend(){
