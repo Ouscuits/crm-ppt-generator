@@ -180,7 +180,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
         <label>Filters:</label>
         <select class="sel" id="dashCountry" onchange="applyDashFilter()"><option value="all">All Countries</option></select>
         <select class="sel" id="dashBrand" onchange="applyDashFilter()"><option value="all">All Brands</option></select>
-        <select class="sel" id="dashCompany" onchange="applyDashFilter()"><option value="all">All Companies</option></select>
+        <div class="mdrop">
+          <button class="mdrop-btn" id="dashCompanyDropBtn" onclick="toggleDrop('dashCompanyList')">
+            <span id="dashCompanyLabel">All companies</span><span style="font-size:10px;color:var(--mid)">&#9660;</span>
+          </button>
+          <div class="mdrop-list" id="dashCompanyList"></div>
+        </div>
         <select class="sel" id="dashYear" onchange="applyDashFilter()"><option value="all">All Years</option></select>
         <div class="mdrop">
           <button class="mdrop-btn" id="dashMonthDropBtn" onclick="toggleDrop('dashMonthList')">
@@ -1179,7 +1184,7 @@ function initDashFilters(){
   months=[...new Set(months)].sort(function(a,b){return monthOrder.indexOf(a)-monthOrder.indexOf(b);});
   fillSelect('dashCountry',countries);
   fillSelect('dashBrand',brands);
-  fillSelect('dashCompany',companies);
+  fillDashCompanies(companies);
   fillSelect('dashYear',years);
   fillDashMonths(months);
 }
@@ -1193,6 +1198,28 @@ function fillSelect(id,vals){
   vals.forEach(function(v){
     var o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o);
   });
+}
+var dashSelectedCompanies=[];
+function fillDashCompanies(companies){
+  var list=document.getElementById('dashCompanyList');
+  list.innerHTML='';
+  companies.forEach(function(c){
+    var item=document.createElement('div');item.className='mdrop-item';
+    var id='dc_'+c.replace(/[^a-zA-Z0-9]/g,'_');
+    item.innerHTML='<input type="checkbox" id="'+id+'" value="'+c+'" onchange="updateDashCompanies()"><label for="'+id+'">'+c+'</label>';
+    list.appendChild(item);
+  });
+  dashSelectedCompanies=[];
+  document.getElementById('dashCompanyLabel').textContent='All companies';
+}
+function updateDashCompanies(){
+  dashSelectedCompanies=[];
+  document.querySelectorAll('#dashCompanyList input:checked').forEach(function(cb){dashSelectedCompanies.push(cb.value);});
+  var lbl=document.getElementById('dashCompanyLabel');
+  if(dashSelectedCompanies.length===0)lbl.textContent='All companies';
+  else if(dashSelectedCompanies.length<=2)lbl.textContent=dashSelectedCompanies.join(', ');
+  else lbl.textContent=dashSelectedCompanies.length+' companies';
+  applyDashFilter();
 }
 var dashSelectedMonths=[];
 function fillDashMonths(months){
@@ -1218,12 +1245,11 @@ function updateDashMonths(){
 function applyDashFilter(){
   var c=document.getElementById('dashCountry').value;
   var b=document.getElementById('dashBrand').value;
-  var co=document.getElementById('dashCompany').value;
   var y=document.getElementById('dashYear').value;
   dashFiltered=dashData.filter(function(r){
     if(c!=='all'&&r.country!==c)return false;
     if(b!=='all'&&r.brand!==b)return false;
-    if(co!=='all'&&r.company!==co)return false;
+    if(dashSelectedCompanies.length>0&&dashSelectedCompanies.indexOf(r.company)===-1)return false;
     if(y!=='all'&&r.year!==y)return false;
     if(dashSelectedMonths.length>0&&dashSelectedMonths.indexOf(r.month)===-1)return false;
     return true;
@@ -1233,7 +1259,9 @@ function applyDashFilter(){
 function clearDashFilter(){
   document.getElementById('dashCountry').value='all';
   document.getElementById('dashBrand').value='all';
-  document.getElementById('dashCompany').value='all';
+  dashSelectedCompanies=[];
+  document.querySelectorAll('#dashCompanyList input:checked').forEach(function(cb){cb.checked=false;});
+  document.getElementById('dashCompanyLabel').textContent='All companies';
   document.getElementById('dashYear').value='all';
   dashSelectedMonths=[];
   document.querySelectorAll('#dashMonthList input:checked').forEach(function(cb){cb.checked=false;});
