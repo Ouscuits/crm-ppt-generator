@@ -1123,7 +1123,7 @@ function parseExcelRows(raw){
       year:String(r['[Year]']||'').trim(),
       customer:String(r['Customer Info[Customer Name]']||'').trim(),
       country:String(r['DB Country name.Country name SP']||'').trim(),
-      brand:String(r['DB program Name SP.Program Name SP']||r['Program[Main Program Name]']||'').trim(),
+      brand:String(r['DB program Name SP.Program Name SP']||'').trim(),
       subProgram:String(r['Program[Sub Program Name]']||'').trim(),
       callOut:String(r['Sales Details[Call Out]']||'').trim(),
       company:String(r['Sales Details[Company]']||'').trim(),
