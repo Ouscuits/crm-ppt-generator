@@ -144,9 +144,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
       <h3>Upload Current Year Data (2026)</h3>
       <p style="font-size:11px;color:var(--mid);margin-bottom:8px">Upload Power BI Excel to update current year sales data.</p>
       <div class="upload-zone" style="max-width:100%;margin:0" onclick="document.getElementById('adminFileInput').click()">
-        <h2>Upload Power BI Excel</h2>
+        <h2>Upload Power BI Excel (select one or multiple files)</h2>
       </div>
-      <input type="file" id="adminFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+      <input type="file" id="adminFileInput" accept=".xlsx,.xls,.csv" style="display:none" multiple>
       <div class="admin-status" id="uploadStatus"></div>
       <h3>Actions</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1072,28 +1072,40 @@ function showAdminDashboard(){
   updateDataStatus();
 }
 
-document.getElementById('adminFileInput').addEventListener('change',function(){handleAdminUpload(this.files[0]);this.value='';});
+document.getElementById('adminFileInput').addEventListener('change',function(){handleAdminUpload(this.files);this.value='';});
 
-function handleAdminUpload(file){
-  if(!file)return;
+function handleAdminUpload(files){
+  if(!files||!files.length)return;
   if(!xlsxReady){showAdminMsg('XLSX not ready yet.','err');return;}
-  var reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      var wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
-      var ws=wb.Sheets[wb.SheetNames[0]];
-      var raw=XLSX.utils.sheet_to_json(ws,{defval:''});
-      var parsed=parseExcelRows(raw);
-      dbPut('current_year',parsed).then(function(){
-        showAdminMsg('Uploaded '+parsed.length+' records for current year.','ok');
-        updateDataStatus();
-        loadDashboardData();
-      }).catch(function(e){showAdminMsg('Storage error: '+e,'err');});
-    }catch(ex){
-      showAdminMsg('Error: '+ex.message,'err');
-    }
-  };
-  reader.readAsBinaryString(file);
+  var allParsed=[];
+  var processed=0;
+  var total=files.length;
+  showAdminMsg('Processing '+total+' file(s)...','ok');
+  for(var f=0;f<files.length;f++){
+    (function(file){
+      var reader=new FileReader();
+      reader.onload=function(e){
+        try{
+          var wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+          var ws=wb.Sheets[wb.SheetNames[0]];
+          var raw=XLSX.utils.sheet_to_json(ws,{defval:''});
+          var parsed=parseExcelRows(raw);
+          allParsed=allParsed.concat(parsed);
+        }catch(ex){
+          showAdminMsg('Error in '+file.name+': '+ex.message,'err');
+        }
+        processed++;
+        if(processed===total){
+          dbPut('current_year',allParsed).then(function(){
+            showAdminMsg('Uploaded '+allParsed.length+' records from '+total+' file(s).','ok');
+            updateDataStatus();
+            loadDashboardData();
+          }).catch(function(e){showAdminMsg('Storage error: '+e,'err');});
+        }
+      };
+      reader.readAsBinaryString(file);
+    })(files[f]);
+  }
 }
 function showAdminMsg(txt,type){
   var el=document.getElementById('uploadStatus');
