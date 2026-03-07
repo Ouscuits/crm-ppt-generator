@@ -931,7 +931,7 @@ function handleDashFile(file){
       var wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
       var ws=wb.Sheets[wb.SheetNames[0]];
       var raw=XLSX.utils.sheet_to_json(ws,{defval:''});
-      dashData=raw.map(function(r){
+      dashData=raw.filter(function(r){return r['[Month]'] && String(r['[Month]']).trim()!=='';}).map(function(r){
         return {
           day:Number(r['[Day]'])||0,
           qty:Number(r['[Invoice_QTY__Pcs_2]'])||0,
@@ -942,7 +942,7 @@ function handleDashFile(file){
           year:String(r['[Year]']||'').trim(),
           customer:String(r['Customer Info[Customer Name]']||'').trim(),
           country:String(r['DB Country name.Country name SP']||'').trim(),
-          brand:String(r['Program[Main Program Name]']||r['DB program Name SP.Program Name SP']||'').trim(),
+          brand:String(r['DB program Name SP.Program Name SP']||r['Program[Main Program Name]']||'').trim(),
           subProgram:String(r['Program[Sub Program Name]']||'').trim(),
           callOut:String(r['Sales Details[Call Out]']||'').trim(),
           company:String(r['Sales Details[Company]']||'').trim(),
