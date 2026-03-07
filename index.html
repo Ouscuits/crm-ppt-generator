@@ -37,7 +37,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 .dash-filters{background:#fff;border-radius:12px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;gap:12px;border:1px solid var(--light);flex-wrap:wrap}
 .dash-filters label{font-size:12px;font-weight:600;white-space:nowrap}
 .logo-compact #logoWrap{position:fixed;top:10px;left:16px;z-index:200;margin:0;text-align:left}
-.logo-compact #smlVideo{width:80px}
+.logo-compact #smlVideo{display:none}
+.logo-compact #smlStatic{display:block}
+#smlStatic{display:none;height:36px}
 .logo-compact .wrap{max-width:1160px;margin:0 auto}
 .dash-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
 .dash-tab{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 20px;border:2px solid var(--light);border-radius:8px;background:#fff;color:var(--mid);cursor:pointer;transition:all .2s}
@@ -166,6 +168,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 <div class="wrap">
   <div id="logoWrap" style="text-align:center;margin-bottom:16px;transition:all .3s">
     <video id="smlVideo" src="sml-animation.mp4" autoplay muted loop playsinline style="width:360px;border-radius:10px;transition:all .3s;cursor:pointer" onclick="goHome()"></video>
+    <img id="smlStatic" src="sml-primary.svg" alt="SML" style="cursor:pointer" onclick="goHome()">
   </div>
   <div class="mode-select" id="modeSelect">
     <button class="mode-btn active" id="modeCrm" onclick="setMode('crm')">CRM Report</button>
@@ -994,7 +997,6 @@ async function buildPptx(name,rows,groupByMode){
 // === MODE SWITCHING ===
 function goHome(){
   document.body.classList.remove('logo-compact');
-  document.getElementById('smlVideo').play();
   document.getElementById('modeSelect').style.display='';
   document.getElementById('crmSection').classList.add('dash-hidden');
   document.getElementById('dashSection').classList.add('dash-hidden');
@@ -1199,7 +1201,6 @@ function loadDashboardData(){
     }
     loading.style.display='none';
     document.body.classList.add('logo-compact');
-    document.getElementById('smlVideo').pause();
     document.getElementById('modeSelect').style.display='none';
     initDashFilters();
     dashFiltered=dashData.slice();
