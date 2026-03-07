@@ -164,7 +164,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 </div>
 <div class="wrap">
   <div id="logoWrap" style="text-align:center;margin-bottom:16px;transition:all .3s">
-    <video id="smlVideo" src="sml-animation.mp4" autoplay muted loop playsinline style="width:360px;border-radius:10px;transition:all .3s"></video>
+    <video id="smlVideo" src="sml-animation.mp4" autoplay muted loop playsinline style="width:360px;border-radius:10px;transition:all .3s;cursor:pointer" onclick="goHome()"></video>
   </div>
   <div class="mode-select" id="modeSelect">
     <button class="mode-btn active" id="modeCrm" onclick="setMode('crm')">CRM Report</button>
@@ -988,6 +988,18 @@ async function buildPptx(name,rows,groupByMode){
 }
 
 // === MODE SWITCHING ===
+function goHome(){
+  document.body.classList.remove('logo-compact');
+  document.getElementById('modeSelect').style.display='';
+  document.getElementById('crmSection').classList.add('dash-hidden');
+  document.getElementById('dashSection').classList.add('dash-hidden');
+  document.getElementById('dashContent').classList.add('dash-hidden');
+  var crmEls=['filterBar','summaryBar','progressWrap','grid'];
+  crmEls.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  currentMode='';
+  document.getElementById('modeCrm').classList.remove('active');
+  document.getElementById('modeDash').classList.remove('active');
+}
 var currentMode='crm';
 function setMode(mode){
   currentMode=mode;
@@ -1004,6 +1016,7 @@ function setMode(mode){
   if(mode==='crm'){
     document.body.classList.remove('logo-compact');
     document.getElementById('modeSelect').style.display='';
+    document.getElementById('dashContent').classList.add('dash-hidden');
   }
   if(mode==='dash')loadDashboardData();
 }
