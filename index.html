@@ -1065,8 +1065,8 @@ function clearCurrentYear(){
   }
 }
 function exportAllData(){
-  Promise.all([dbGet('historical'),dbGet('current_year')]).then(function(res){
-    var all=(res[0]||[]).concat(res[1]||[]);
+  dbGet('current_year').then(function(curr){
+    var all=(histDataFromFile||[]).concat(curr||[]);
     var blob=new Blob([JSON.stringify(all)],{type:'application/json'});
     var a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download='sml_all_data.json';a.click();
@@ -1104,8 +1104,9 @@ function loadDashboardData(){
   var loading=document.getElementById('dashLoading');
   loading.style.display='block';
   loading.textContent='Loading dashboard data...';
-  Promise.all([dbGet('historical'),dbGet('current_year')]).then(function(res){
-    dashData=(res[0]||[]).concat(res[1]||[]);
+  dbGet('current_year').then(function(curr){
+    var hist=histDataFromFile||[];
+    dashData=hist.concat(curr||[]);
     if(dashData.length===0){
       loading.style.display='block';
       loading.textContent='No data available. Admin must upload sales data.';
@@ -1121,26 +1122,23 @@ function loadDashboardData(){
 }
 
 function updateDataStatus(){
-  Promise.all([dbGet('historical'),dbGet('current_year')]).then(function(res){
-    var hist=res[0]||[];var curr=res[1]||[];
+  dbGet('current_year').then(function(curr){
+    var hist=histDataFromFile||[];
+    curr=curr||[];
     var html='<div style="font-size:12px;margin-bottom:12px">';
-    html+='<span class="year-tag hist">Historical: '+hist.length+' records</span> ';
-    html+='<span class="year-tag curr">Current Year: '+curr.length+' records</span>';
+    html+='<span class="year-tag hist">Historical (2024-2025): '+hist.length+' records</span> ';
+    html+='<span class="year-tag curr">Current Year (2026): '+curr.length+' records</span>';
     html+='</div>';
     document.getElementById('dataStatus').innerHTML=html;
   });
 }
 
-// Load historical JSON from repo into IndexedDB
+// Load historical JSON from repo
+var histDataFromFile=null;
 fetch('historical-data.json').then(function(r){return r.json();}).then(function(data){
-  if(data&&data.length>0){
-    dbPut('historical',data).then(function(){
-      if(currentMode==='dash')loadDashboardData();
-    });
-  }else{
-    if(currentMode==='dash')loadDashboardData();
-  }
-}).catch(function(){if(currentMode==='dash')loadDashboardData();});
+  histDataFromFile=data&&data.length>0?data:[];
+  if(currentMode==='dash')loadDashboardData();
+}).catch(function(){histDataFromFile=[];if(currentMode==='dash')loadDashboardData();});
 
 function initDashFilters(){
   var countries=uniqueDash('country');
