@@ -317,6 +317,7 @@ function handleFile(file){
       allRows=raw.map(parseRow).filter(function(r){return r.site&&r.site.trim();});
       showMsg('✓ '+allRows.length+' records · '+uniqueVals(allRows,'site').length+' countries · '+uniqueVals(allRows,'brand').length+' brands','ok');
       document.body.classList.add('logo-compact');
+      document.getElementById('smlVideo').pause();
       document.getElementById('modeSelect').style.display='none';
       buildFilterOptions();applyFilter();
     }catch(ex){showMsg('Error: '+ex.message,'err');console.error(ex);}
@@ -993,6 +994,7 @@ async function buildPptx(name,rows,groupByMode){
 // === MODE SWITCHING ===
 function goHome(){
   document.body.classList.remove('logo-compact');
+  document.getElementById('smlVideo').play();
   document.getElementById('modeSelect').style.display='';
   document.getElementById('crmSection').classList.add('dash-hidden');
   document.getElementById('dashSection').classList.add('dash-hidden');
@@ -1197,6 +1199,7 @@ function loadDashboardData(){
     }
     loading.style.display='none';
     document.body.classList.add('logo-compact');
+    document.getElementById('smlVideo').pause();
     document.getElementById('modeSelect').style.display='none';
     initDashFilters();
     dashFiltered=dashData.slice();
