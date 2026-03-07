@@ -9,7 +9,6 @@
 :root{--red:#E21B1B;--dark:#1A1A1A;--gray:#F4F4F4;--mid:#777;--light:#E4E4E4;--active:#2E7D32;--potential:#1565C0;--hold:#E8A317;--nogo:#E21B1B;--active-bg:#E8F5E9;--potential-bg:#E3F2FD;--hold-bg:#FFF8E1;--nogo-bg:#FFEBEE;}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);min-height:100vh;position:relative}
-body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;height:500px;background:url('sml-logo.jpg') center/contain no-repeat;opacity:0.05;z-index:0;pointer-events:none}
 .hdr{background:var(--red);padding:14px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;border-bottom:3px solid #B71616}
 .logo{background:#fff;color:var(--red);font-family:'Space Mono',monospace;font-weight:700;font-size:15px;padding:5px 20px 5px 12px;clip-path:polygon(0 0,88% 0,100% 50%,88% 100%,0 100%);letter-spacing:2px;white-space:nowrap}
 .hdr-title{color:#fff;font-size:16px;font-weight:500}
@@ -95,10 +94,7 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
 </head>
 <body>
 <div class="hdr">
-  <div class="logo">SML</div>
-  <span class="hdr-title">CRM PPT Generator</span>
-  <span class="hdr-sub">PPTX by Country &amp; Brand</span>
-  <span class="lib-badge lib-loading" id="libStatus">⏳ Loading…</span>
+  <span class="lib-badge lib-loading" id="libStatus" style="margin-left:auto">⏳ Loading…</span>
 </div>
 <div class="wrap">
   <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
