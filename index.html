@@ -199,6 +199,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
       <div class="dash-tabs">
         <button class="dash-tab active" onclick="setDashTab('overview')">Sales Overview</button>
         <button class="dash-tab" onclick="setDashTab('brand')">Brand Analysis</button>
+        <button class="dash-tab" onclick="setDashTab('zara')">Zara Breakdown</button>
         <button class="dash-tab" onclick="setDashTab('period')">Period Comparison</button>
       </div>
       <!-- Tab 1: Sales Overview -->
@@ -217,7 +218,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
         <div class="dash-card"><h3>Brand Mix (%)</h3><canvas id="chartBrandMix"></canvas></div>
         <div class="dash-card dash-full"><h3>Top 15 Customers by Brand (HKD)</h3><canvas id="chartBrandCustomers"></canvas></div>
       </div>
-      <!-- Tab 3: Period Comparison -->
+      <!-- Tab 3: Zara Breakdown -->
+      <div id="tabZara" class="dash-grid" style="display:none">
+        <div class="dash-card"><h3>Sales by Sub-Program (HKD)</h3><canvas id="chartZaraSubs"></canvas></div>
+        <div class="dash-card"><h3>Quantity by Sub-Program (Pcs)</h3><canvas id="chartZaraSubsQty"></canvas></div>
+        <div class="dash-card"><h3>Sub-Program by Product Type (HKD)</h3><canvas id="chartZaraProduct"></canvas></div>
+        <div class="dash-card"><h3>Sub-Program by Country (HKD)</h3><canvas id="chartZaraCountry"></canvas></div>
+        <div class="dash-card dash-full"><h3>Monthly Trend by Sub-Program (HKD)</h3><canvas id="chartZaraTrend"></canvas></div>
+        <div class="dash-card dash-full"><h3>Top 15 Customers - Zara (HKD)</h3><canvas id="chartZaraCustomers"></canvas></div>
+      </div>
+      <!-- Tab 4: Period Comparison -->
       <div id="tabPeriod" class="dash-grid" style="display:none">
         <div class="dash-card dash-full"><h3>Quarterly Sales Comparison (HKD)</h3><canvas id="chartQuarter"></canvas></div>
         <div class="dash-card dash-full"><h3>Year-over-Year Sales (HKD)</h3><canvas id="chartYoY"></canvas></div>
@@ -1125,6 +1135,7 @@ function parseExcelRows(raw){
       country:String(r['DB Country name.Country name SP']||'').trim(),
       brand:String(r['DB program Name SP.Program Name SP']||'').trim(),
       subProgram:String(r['Program[Sub Program Name]']||'').trim(),
+      subCode:String(r['Program[Main&Sub Program Code]']||'').trim(),
       callOut:String(r['Sales Details[Call Out]']||'').trim(),
       company:String(r['Sales Details[Company]']||'').trim(),
       productType:String(r['Sales Details[Product Type Eng Desc]']||'').trim(),
@@ -1273,10 +1284,11 @@ function clearDashFilter(){
 var currentDashTab='overview';
 function setDashTab(tab){
   currentDashTab=tab;
-  var labels={overview:'Sales Overview',brand:'Brand Analysis',period:'Period Comparison'};
+  var labels={overview:'Sales Overview',brand:'Brand Analysis',zara:'Zara Breakdown',period:'Period Comparison'};
   document.querySelectorAll('.dash-tab').forEach(function(b){b.classList.toggle('active',b.textContent===labels[tab]);});
   document.getElementById('tabOverview').style.display=tab==='overview'?'':'none';
   document.getElementById('tabBrand').style.display=tab==='brand'?'':'none';
+  document.getElementById('tabZara').style.display=tab==='zara'?'':'none';
   document.getElementById('tabPeriod').style.display=tab==='period'?'':'none';
   renderCurrentTab();
 }
@@ -1287,6 +1299,7 @@ function renderDashboard(){
 function renderCurrentTab(){
   if(currentDashTab==='overview')renderOverviewTab();
   else if(currentDashTab==='brand')renderBrandTab();
+  else if(currentDashTab==='zara')renderZaraTab();
   else if(currentDashTab==='period')renderPeriodTab();
 }
 function renderOverviewTab(){
@@ -1303,6 +1316,128 @@ function renderBrandTab(){
   renderBrandMix();
   renderBrandCustomers();
 }
+// === ZARA TAB ===
+function getZaraRows(){
+  return dashFiltered.filter(function(r){return r.brand==='Zara';});
+}
+function renderZaraTab(){
+  var rows=getZaraRows();
+  renderZaraChart('chartZaraSubs',rows,'subProgram','salesHKD','bar');
+  renderZaraChart('chartZaraSubsQty',rows,'subProgram','qty','bar');
+  renderZaraSubProduct(rows);
+  renderZaraSubCountry(rows);
+  renderZaraTrend(rows);
+  renderCustomers('chartZaraCustomers',rows);
+}
+
+function renderZaraChart(canvasId,rows,groupKey,valueKey,type){
+  var agg={};
+  rows.forEach(function(r){
+    var k=r[groupKey]||'Unknown';
+    agg[k]=(agg[k]||0)+r[valueKey];
+  });
+  var entries=Object.entries(agg).sort(function(a,b){return b[1]-a[1];});
+  var labels=entries.map(function(e){return e[0];});
+  var data=entries.map(function(e){return e[1];});
+  if(dashCharts[canvasId]){dashCharts[canvasId].destroy();}
+  var ctx=document.getElementById(canvasId).getContext('2d');
+  dashCharts[canvasId]=new Chart(ctx,{
+    type:type,
+    data:{labels:labels,datasets:[{data:data,backgroundColor:DASH_COLORS.slice(0,labels.length),borderWidth:0,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+fmtNum(ctx.raw);}}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}},x:{ticks:{font:{family:'DM Sans',size:10}}}}
+    }
+  });
+}
+
+function renderZaraSubProduct(rows){
+  var subs={};
+  rows.forEach(function(r){
+    var s=r.subProgram||'Unknown';
+    if(!subs[s])subs[s]={};
+    var pt=r.productType||'Unknown';
+    subs[s][pt]=(subs[s][pt]||0)+r.salesHKD;
+  });
+  var subNames=Object.keys(subs).sort(function(a,b){
+    var ta=0,tb=0;Object.values(subs[a]).forEach(function(v){ta+=v;});Object.values(subs[b]).forEach(function(v){tb+=v;});return tb-ta;
+  });
+  var allPts=new Set();
+  subNames.forEach(function(s){Object.keys(subs[s]).forEach(function(pt){allPts.add(pt);});});
+  var ptList=[...allPts].sort();
+  var datasets=ptList.map(function(pt,i){
+    return {label:pt,data:subNames.map(function(s){return subs[s][pt]||0;}),backgroundColor:DASH_COLORS[i%DASH_COLORS.length],borderRadius:4,borderWidth:0};
+  });
+  if(dashCharts['chartZaraProduct']){dashCharts['chartZaraProduct'].destroy();}
+  var ctx=document.getElementById('chartZaraProduct').getContext('2d');
+  dashCharts['chartZaraProduct']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:subNames,datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:10}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+fmtNum(ctx.raw);}}}},
+      scales:{x:{stacked:true,ticks:{font:{family:'DM Sans',size:10}}},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}}}
+    }
+  });
+}
+
+function renderZaraSubCountry(rows){
+  var subs={};
+  rows.forEach(function(r){
+    var s=r.subProgram||'Unknown';
+    if(!subs[s])subs[s]={};
+    var c=r.country||'Unknown';
+    subs[s][c]=(subs[s][c]||0)+r.salesHKD;
+  });
+  var subNames=Object.keys(subs).sort(function(a,b){
+    var ta=0,tb=0;Object.values(subs[a]).forEach(function(v){ta+=v;});Object.values(subs[b]).forEach(function(v){tb+=v;});return tb-ta;
+  });
+  var allCountries=new Set();
+  subNames.forEach(function(s){Object.keys(subs[s]).forEach(function(c){allCountries.add(c);});});
+  var countryList=[...allCountries].sort();
+  var datasets=countryList.map(function(c,i){
+    return {label:c,data:subNames.map(function(s){return subs[s][c]||0;}),backgroundColor:DASH_COLORS[i%DASH_COLORS.length],borderRadius:4,borderWidth:0};
+  });
+  if(dashCharts['chartZaraCountry']){dashCharts['chartZaraCountry'].destroy();}
+  var ctx=document.getElementById('chartZaraCountry').getContext('2d');
+  dashCharts['chartZaraCountry']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:subNames,datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:10}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+fmtNum(ctx.raw);}}}},
+      scales:{x:{stacked:true,ticks:{font:{family:'DM Sans',size:10}}},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}}}
+    }
+  });
+}
+
+function renderZaraTrend(rows){
+  var monthOrder=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var subs={};
+  rows.forEach(function(r){
+    var s=r.subProgram||'Unknown';
+    if(!subs[s])subs[s]={};
+    subs[s][r.month]=(subs[s][r.month]||0)+r.salesHKD;
+  });
+  var subNames=Object.keys(subs).sort(function(a,b){
+    var ta=0,tb=0;Object.values(subs[a]).forEach(function(v){ta+=v;});Object.values(subs[b]).forEach(function(v){tb+=v;});return tb-ta;
+  });
+  var allMonths=new Set();
+  subNames.forEach(function(s){Object.keys(subs[s]).forEach(function(m){allMonths.add(m);});});
+  var months=[...allMonths].sort(function(a,b){return monthOrder.indexOf(a)-monthOrder.indexOf(b);});
+  var datasets=subNames.map(function(s,i){
+    return {label:s,data:months.map(function(m){return subs[s][m]||0;}),borderColor:DASH_COLORS[i%DASH_COLORS.length],backgroundColor:DASH_COLORS[i%DASH_COLORS.length]+'22',fill:false,tension:0.3,pointRadius:3,borderWidth:2};
+  });
+  if(dashCharts['chartZaraTrend']){dashCharts['chartZaraTrend'].destroy();}
+  var ctx=document.getElementById('chartZaraTrend').getContext('2d');
+  dashCharts['chartZaraTrend']=new Chart(ctx,{
+    type:'line',
+    data:{labels:months.map(function(m){return m.substring(0,3);}),datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:10}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+fmtNum(ctx.raw)+' HKD';}}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}},x:{ticks:{font:{family:'DM Sans',size:11}}}}
+    }
+  });
+}
+
 function renderPeriodTab(){
   renderQuarterly();
   renderYoY();
