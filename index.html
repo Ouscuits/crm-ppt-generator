@@ -1344,18 +1344,21 @@ var ZARA_SUBS=['Maag','Ecru','Vilet','Dub'];
 function getZaraRows(){
   return dashFiltered.filter(function(r){return r.brand==='Zara';});
 }
-function getZaraSubRows(){
-  return dashFiltered.filter(function(r){return r.brand==='Zara'&&ZARA_SUBS.indexOf(r.subProgram)>-1;});
+function getZaraTaggedRows(){
+  return getZaraRows().map(function(r){
+    var copy={};for(var k in r)copy[k]=r[k];
+    copy.zaraLabel=ZARA_SUBS.indexOf(r.subProgram)>-1?r.subProgram:'ZARA';
+    return copy;
+  });
 }
 function renderZaraTab(){
-  var subRows=getZaraSubRows();
-  var allRows=getZaraRows();
-  renderZaraChart('chartZaraSubs',subRows,'subProgram','salesHKD','bar');
-  renderZaraChart('chartZaraSubsQty',subRows,'subProgram','qty','bar');
-  renderZaraSubProduct(subRows);
-  renderZaraSubCountry(subRows);
-  renderZaraTrend(subRows);
-  renderCustomers('chartZaraCustomers',allRows);
+  var rows=getZaraTaggedRows();
+  renderZaraChart('chartZaraSubs',rows,'zaraLabel','salesHKD','bar');
+  renderZaraChart('chartZaraSubsQty',rows,'zaraLabel','qty','bar');
+  renderZaraSubProduct(rows);
+  renderZaraSubCountry(rows);
+  renderZaraTrend(rows);
+  renderCustomers('chartZaraCustomers',rows);
 }
 
 function renderZaraChart(canvasId,rows,groupKey,valueKey,type){
@@ -1382,7 +1385,7 @@ function renderZaraChart(canvasId,rows,groupKey,valueKey,type){
 function renderZaraSubProduct(rows){
   var subs={};
   rows.forEach(function(r){
-    var s=r.subProgram||'Unknown';
+    var s=r.zaraLabel||r.subProgram||'Unknown';
     if(!subs[s])subs[s]={};
     var pt=r.productType||'Unknown';
     subs[s][pt]=(subs[s][pt]||0)+r.salesHKD;
@@ -1411,7 +1414,7 @@ function renderZaraSubProduct(rows){
 function renderZaraSubCountry(rows){
   var subs={};
   rows.forEach(function(r){
-    var s=r.subProgram||'Unknown';
+    var s=r.zaraLabel||r.subProgram||'Unknown';
     if(!subs[s])subs[s]={};
     var c=r.country||'Unknown';
     subs[s][c]=(subs[s][c]||0)+r.salesHKD;
@@ -1441,7 +1444,7 @@ function renderZaraTrend(rows){
   var monthOrder=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var subs={};
   rows.forEach(function(r){
-    var s=r.subProgram||'Unknown';
+    var s=r.zaraLabel||r.subProgram||'Unknown';
     if(!subs[s])subs[s]={};
     subs[s][r.month]=(subs[s][r.month]||0)+r.salesHKD;
   });
