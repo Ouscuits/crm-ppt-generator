@@ -18,10 +18,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 .lib-loading{background:#3a2e00;color:#FFC107;border:1px solid #E8A317}
 .lib-err{background:#3a0000;color:#EF5350;border:1px solid #E21B1B}
 .wrap{max-width:1160px;margin:0 auto;padding:28px 20px}
-.upload-zone{border:2px dashed #D0D0D0;border-radius:14px;padding:52px 32px;text-align:center;background:#fff;cursor:pointer;transition:all .25s}
+.upload-zone{border:2px dashed #D0D0D0;border-radius:14px;padding:20px 32px;text-align:center;background:#fff;cursor:pointer;transition:all .25s}
 .upload-zone:hover,.upload-zone.over{border-color:var(--red);background:#FFF8F8;box-shadow:0 8px 32px rgba(226,27,27,.08)}
-.upload-icon{font-size:44px;opacity:.2;margin-bottom:10px;display:block}
-.upload-zone h2{font-size:17px;font-weight:600;margin-bottom:5px}
+.upload-icon{font-size:28px;opacity:.2;margin-bottom:4px;display:block}
+.upload-zone h2{font-size:15px;font-weight:600;margin-bottom:3px}
 .upload-zone p{color:var(--mid);font-size:13px}
 .upload-zone small{display:block;margin-top:6px;font-size:11px;color:#bbb;font-family:'Space Mono',monospace}
 .msg{font-family:'Space Mono',monospace;font-size:11px;padding:10px 14px;border-radius:8px;margin-top:10px;display:none;line-height:1.6}
@@ -108,7 +108,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
   </div>
   <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
   <div class="msg" id="msg"></div>
-  <div class="api-section" id="apiSection">
+  <div class="api-section" id="apiSection" style="display:none!important">
     <label>🤖 Claude API Key:</label>
     <input type="password" class="api-input" id="apiKey" placeholder="sk-ant-api03-… (optional — enables AI Strategic Analysis)">
     <span class="api-hint">Leave empty to use default analysis</span>
