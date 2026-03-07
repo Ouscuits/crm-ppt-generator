@@ -144,7 +144,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
         <div class="dash-card"><h3>Sales by Product Type (HKD)</h3><canvas id="chartProduct"></canvas></div>
         <div class="dash-card"><h3>Quantity by Company (Pcs)</h3><canvas id="chartCompany"></canvas></div>
         <div class="dash-card dash-full"><h3>Monthly Sales Trend (HKD)</h3><canvas id="chartTrend"></canvas></div>
-        <div class="dash-card dash-full"><h3>Top 15 Vendors by Sales (HKD)</h3><canvas id="chartVendors"></canvas></div>
+        <div class="dash-card dash-full"><h3>Top 15 Customers by Sales (HKD)</h3><canvas id="chartVendors"></canvas></div>
       </div>
     </div>
   </div>
@@ -1110,7 +1110,7 @@ function renderTrend(){
 function renderVendors(){
   var agg={};
   dashFiltered.forEach(function(r){
-    var k=r.vendor||'Unknown';
+    var k=r.customer||'Unknown';
     agg[k]=(agg[k]||0)+r.salesHKD;
   });
   var entries=Object.entries(agg).sort(function(a,b){return b[1]-a[1];}).slice(0,15);
