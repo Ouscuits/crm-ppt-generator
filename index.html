@@ -964,6 +964,48 @@ function md5simple(s){
   var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
   return Math.abs(h).toString(16);
 }
+// IndexedDB for large data storage
+var dbName='sml_dashboard';var dbVersion=1;var db=null;
+function openDB(){
+  return new Promise(function(resolve,reject){
+    var req=indexedDB.open(dbName,dbVersion);
+    req.onupgradeneeded=function(e){
+      var d=e.target.result;
+      if(!d.objectStoreNames.contains('data'))d.createObjectStore('data');
+    };
+    req.onsuccess=function(e){db=e.target.result;resolve(db);};
+    req.onerror=function(e){reject(e);};
+  });
+}
+function dbPut(key,val){
+  return openDB().then(function(d){
+    return new Promise(function(resolve,reject){
+      var tx=d.transaction('data','readwrite');
+      tx.objectStore('data').put(val,key);
+      tx.oncomplete=resolve;tx.onerror=reject;
+    });
+  });
+}
+function dbGet(key){
+  return openDB().then(function(d){
+    return new Promise(function(resolve,reject){
+      var tx=d.transaction('data','readonly');
+      var req=tx.objectStore('data').get(key);
+      req.onsuccess=function(){resolve(req.result||[]);};
+      req.onerror=reject;
+    });
+  });
+}
+function dbDelete(key){
+  return openDB().then(function(d){
+    return new Promise(function(resolve,reject){
+      var tx=d.transaction('data','readwrite');
+      tx.objectStore('data').delete(key);
+      tx.oncomplete=resolve;tx.onerror=reject;
+    });
+  });
+}
+
 var adminLoggedIn=false;
 function showAdminLogin(){
   document.getElementById('adminOverlay').classList.add('show');
@@ -985,15 +1027,6 @@ function showAdminDashboard(){
   document.getElementById('adminDashboard').style.display='block';
   updateDataStatus();
 }
-function updateDataStatus(){
-  var hist=getHistoricalData();
-  var curr=getCurrentYearData();
-  var html='<div style="font-size:12px;margin-bottom:12px">';
-  html+='<span class="year-tag hist">Historical: '+hist.length+' records</span> ';
-  html+='<span class="year-tag curr">Current Year: '+curr.length+' records</span>';
-  html+='</div>';
-  document.getElementById('dataStatus').innerHTML=html;
-}
 
 document.getElementById('adminFileInput').addEventListener('change',function(){handleAdminUpload(this.files[0]);this.value='';});
 
@@ -1007,10 +1040,11 @@ function handleAdminUpload(file){
       var ws=wb.Sheets[wb.SheetNames[0]];
       var raw=XLSX.utils.sheet_to_json(ws,{defval:''});
       var parsed=parseExcelRows(raw);
-      localStorage.setItem('sml_current_year',JSON.stringify(parsed));
-      showAdminMsg('Uploaded '+parsed.length+' records for current year.','ok');
-      updateDataStatus();
-      loadDashboardData();
+      dbPut('current_year',parsed).then(function(){
+        showAdminMsg('Uploaded '+parsed.length+' records for current year.','ok');
+        updateDataStatus();
+        loadDashboardData();
+      }).catch(function(e){showAdminMsg('Storage error: '+e,'err');});
     }catch(ex){
       showAdminMsg('Error: '+ex.message,'err');
     }
@@ -1023,17 +1057,20 @@ function showAdminMsg(txt,type){
 }
 function clearCurrentYear(){
   if(confirm('Clear all current year data?')){
-    localStorage.removeItem('sml_current_year');
-    showAdminMsg('Current year data cleared.','ok');
-    updateDataStatus();
-    loadDashboardData();
+    dbDelete('current_year').then(function(){
+      showAdminMsg('Current year data cleared.','ok');
+      updateDataStatus();
+      loadDashboardData();
+    });
   }
 }
 function exportAllData(){
-  var all=getHistoricalData().concat(getCurrentYearData());
-  var blob=new Blob([JSON.stringify(all)],{type:'application/json'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='sml_all_data.json';a.click();
+  Promise.all([dbGet('historical'),dbGet('current_year')]).then(function(res){
+    var all=(res[0]||[]).concat(res[1]||[]);
+    var blob=new Blob([JSON.stringify(all)],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='sml_all_data.json';a.click();
+  });
 }
 
 // === DASHBOARD DATA ===
@@ -1063,38 +1100,47 @@ function parseExcelRows(raw){
   });
 }
 
-function getHistoricalData(){
-  try{return JSON.parse(localStorage.getItem('sml_historical')||'[]');}catch(e){return [];}
-}
-function getCurrentYearData(){
-  try{return JSON.parse(localStorage.getItem('sml_current_year')||'[]');}catch(e){return [];}
-}
-
-var historicalLoaded=false;
 function loadDashboardData(){
-  var hist=getHistoricalData();
-  var curr=getCurrentYearData();
-  dashData=hist.concat(curr);
   var loading=document.getElementById('dashLoading');
-  if(dashData.length===0){
-    loading.style.display='block';
-    loading.textContent='No data available. Admin must upload sales data.';
-    document.getElementById('dashContent').classList.add('dash-hidden');
-    return;
-  }
-  loading.style.display='none';
-  initDashFilters();
-  dashFiltered=dashData.slice();
-  renderDashboard();
-  document.getElementById('dashContent').classList.remove('dash-hidden');
+  loading.style.display='block';
+  loading.textContent='Loading dashboard data...';
+  Promise.all([dbGet('historical'),dbGet('current_year')]).then(function(res){
+    dashData=(res[0]||[]).concat(res[1]||[]);
+    if(dashData.length===0){
+      loading.style.display='block';
+      loading.textContent='No data available. Admin must upload sales data.';
+      document.getElementById('dashContent').classList.add('dash-hidden');
+      return;
+    }
+    loading.style.display='none';
+    initDashFilters();
+    dashFiltered=dashData.slice();
+    renderDashboard();
+    document.getElementById('dashContent').classList.remove('dash-hidden');
+  });
 }
 
-// Load historical JSON from repo
+function updateDataStatus(){
+  Promise.all([dbGet('historical'),dbGet('current_year')]).then(function(res){
+    var hist=res[0]||[];var curr=res[1]||[];
+    var html='<div style="font-size:12px;margin-bottom:12px">';
+    html+='<span class="year-tag hist">Historical: '+hist.length+' records</span> ';
+    html+='<span class="year-tag curr">Current Year: '+curr.length+' records</span>';
+    html+='</div>';
+    document.getElementById('dataStatus').innerHTML=html;
+  });
+}
+
+// Load historical JSON from repo into IndexedDB
 fetch('historical-data.json').then(function(r){return r.json();}).then(function(data){
-  if(data&&data.length>0){localStorage.setItem('sml_historical',JSON.stringify(data));}
-  historicalLoaded=true;
-  if(currentMode==='dash')loadDashboardData();
-}).catch(function(){historicalLoaded=true;if(currentMode==='dash')loadDashboardData();});
+  if(data&&data.length>0){
+    dbPut('historical',data).then(function(){
+      if(currentMode==='dash')loadDashboardData();
+    });
+  }else{
+    if(currentMode==='dash')loadDashboardData();
+  }
+}).catch(function(){if(currentMode==='dash')loadDashboardData();});
 
 function initDashFilters(){
   var countries=uniqueDash('country');
