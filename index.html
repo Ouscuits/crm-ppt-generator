@@ -8,16 +8,17 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap');
 :root{--red:#E21B1B;--dark:#1A1A1A;--gray:#F4F4F4;--mid:#777;--light:#E4E4E4;--active:#2E7D32;--potential:#1565C0;--hold:#E8A317;--nogo:#E21B1B;--active-bg:#E8F5E9;--potential-bg:#E3F2FD;--hold-bg:#FFF8E1;--nogo-bg:#FFEBEE;}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);min-height:100vh}
-.hdr{background:var(--dark);padding:14px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;border-bottom:3px solid var(--red)}
-.logo{background:var(--red);color:#fff;font-family:'Space Mono',monospace;font-weight:700;font-size:15px;padding:5px 20px 5px 12px;clip-path:polygon(0 0,88% 0,100% 50%,88% 100%,0 100%);letter-spacing:2px;white-space:nowrap}
+body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);min-height:100vh;position:relative}
+body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;height:500px;background:url('sml-logo.jpg') center/contain no-repeat;opacity:0.05;z-index:0;pointer-events:none}
+.hdr{background:var(--red);padding:14px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;border-bottom:3px solid #B71616}
+.logo{background:#fff;color:var(--red);font-family:'Space Mono',monospace;font-weight:700;font-size:15px;padding:5px 20px 5px 12px;clip-path:polygon(0 0,88% 0,100% 50%,88% 100%,0 100%);letter-spacing:2px;white-space:nowrap}
 .hdr-title{color:#fff;font-size:16px;font-weight:500}
-.hdr-sub{color:#888;font-size:11px;margin-left:auto;font-family:'Space Mono',monospace}
+.hdr-sub{color:rgba(255,255,255,.7);font-size:11px;margin-left:auto;font-family:'Space Mono',monospace}
 .lib-badge{font-size:10px;padding:3px 9px;border-radius:20px;font-family:'Space Mono',monospace;font-weight:700}
 .lib-ok{background:#1a3a1a;color:#4CAF50;border:1px solid #2E7D32}
 .lib-loading{background:#3a2e00;color:#FFC107;border:1px solid #E8A317}
 .lib-err{background:#3a0000;color:#EF5350;border:1px solid #E21B1B}
-.wrap{max-width:1160px;margin:0 auto;padding:28px 20px}
+.wrap{max-width:1160px;margin:0 auto;padding:28px 20px;position:relative;z-index:1}
 .upload-zone{border:2px dashed #D0D0D0;border-radius:14px;padding:20px 32px;text-align:center;background:#fff;cursor:pointer;transition:all .25s}
 .upload-zone:hover,.upload-zone.over{border-color:var(--red);background:#FFF8F8;box-shadow:0 8px 32px rgba(226,27,27,.08)}
 .upload-icon{font-size:28px;opacity:.2;margin-bottom:4px;display:block}
