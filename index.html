@@ -182,7 +182,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
         <select class="sel" id="dashBrand" onchange="applyDashFilter()"><option value="all">All Brands</option></select>
         <select class="sel" id="dashCompany" onchange="applyDashFilter()"><option value="all">All Companies</option></select>
         <select class="sel" id="dashYear" onchange="applyDashFilter()"><option value="all">All Years</option></select>
-        <select class="sel" id="dashMonth" onchange="applyDashFilter()"><option value="all">All Months</option></select>
+        <div class="mdrop">
+          <button class="mdrop-btn" id="dashMonthDropBtn" onclick="toggleDrop('dashMonthList')">
+            <span id="dashMonthLabel">All months</span><span style="font-size:10px;color:var(--mid)">&#9660;</span>
+          </button>
+          <div class="mdrop-list" id="dashMonthList"></div>
+        </div>
         <button class="btn-clear" onclick="clearDashFilter()">Clear</button>
       </div>
       <div class="kpi-row" id="dashKpis"></div>
@@ -1176,7 +1181,7 @@ function initDashFilters(){
   fillSelect('dashBrand',brands);
   fillSelect('dashCompany',companies);
   fillSelect('dashYear',years);
-  fillSelect('dashMonth',months);
+  fillDashMonths(months);
 }
 function uniqueDash(key){
   return [...new Set(dashData.map(function(r){return r[key]}).filter(Boolean))].sort();
@@ -1189,18 +1194,38 @@ function fillSelect(id,vals){
     var o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o);
   });
 }
+var dashSelectedMonths=[];
+function fillDashMonths(months){
+  var list=document.getElementById('dashMonthList');
+  list.innerHTML='';
+  months.forEach(function(m){
+    var item=document.createElement('div');item.className='mdrop-item';
+    item.innerHTML='<input type="checkbox" id="dm_'+m+'" value="'+m+'" onchange="updateDashMonths()"><label for="dm_'+m+'">'+m+'</label>';
+    list.appendChild(item);
+  });
+  dashSelectedMonths=[];
+  document.getElementById('dashMonthLabel').textContent='All months';
+}
+function updateDashMonths(){
+  dashSelectedMonths=[];
+  document.querySelectorAll('#dashMonthList input:checked').forEach(function(cb){dashSelectedMonths.push(cb.value);});
+  var lbl=document.getElementById('dashMonthLabel');
+  if(dashSelectedMonths.length===0)lbl.textContent='All months';
+  else if(dashSelectedMonths.length<=2)lbl.textContent=dashSelectedMonths.map(function(m){return m.substring(0,3);}).join(', ');
+  else lbl.textContent=dashSelectedMonths.length+' months';
+  applyDashFilter();
+}
 function applyDashFilter(){
   var c=document.getElementById('dashCountry').value;
   var b=document.getElementById('dashBrand').value;
   var co=document.getElementById('dashCompany').value;
   var y=document.getElementById('dashYear').value;
-  var m=document.getElementById('dashMonth').value;
   dashFiltered=dashData.filter(function(r){
     if(c!=='all'&&r.country!==c)return false;
     if(b!=='all'&&r.brand!==b)return false;
     if(co!=='all'&&r.company!==co)return false;
     if(y!=='all'&&r.year!==y)return false;
-    if(m!=='all'&&r.month!==m)return false;
+    if(dashSelectedMonths.length>0&&dashSelectedMonths.indexOf(r.month)===-1)return false;
     return true;
   });
   renderDashboard();
@@ -1210,7 +1235,9 @@ function clearDashFilter(){
   document.getElementById('dashBrand').value='all';
   document.getElementById('dashCompany').value='all';
   document.getElementById('dashYear').value='all';
-  document.getElementById('dashMonth').value='all';
+  dashSelectedMonths=[];
+  document.querySelectorAll('#dashMonthList input:checked').forEach(function(cb){cb.checked=false;});
+  document.getElementById('dashMonthLabel').textContent='All months';
   dashFiltered=dashData.slice();
   renderDashboard();
 }
