@@ -35,6 +35,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 .dash-full{grid-column:1/-1}
 .dash-filters{background:#fff;border-radius:12px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;gap:12px;border:1px solid var(--light);flex-wrap:wrap}
 .dash-filters label{font-size:12px;font-weight:600;white-space:nowrap}
+.dash-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+.dash-tab{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 20px;border:2px solid var(--light);border-radius:8px;background:#fff;color:var(--mid);cursor:pointer;transition:all .2s}
+.dash-tab:hover{border-color:var(--red);color:var(--red)}
+.dash-tab.active{background:var(--dark);color:#fff;border-color:var(--dark)}
 .admin-link{position:fixed;bottom:10px;right:10px;font-size:10px;color:#ddd;cursor:pointer;z-index:999;font-family:'Space Mono',monospace}
 .admin-link:hover{color:var(--mid)}
 .admin-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
@@ -182,13 +186,33 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
         <button class="btn-clear" onclick="clearDashFilter()">Clear</button>
       </div>
       <div class="kpi-row" id="dashKpis"></div>
-      <div class="dash-grid">
+      <div class="dash-tabs">
+        <button class="dash-tab active" onclick="setDashTab('overview')">Sales Overview</button>
+        <button class="dash-tab" onclick="setDashTab('brand')">Brand Analysis</button>
+        <button class="dash-tab" onclick="setDashTab('period')">Period Comparison</button>
+      </div>
+      <!-- Tab 1: Sales Overview -->
+      <div id="tabOverview" class="dash-grid">
         <div class="dash-card"><h3>Sales by Country (HKD)</h3><canvas id="chartCountry"></canvas></div>
-        <div class="dash-card"><h3>Sales by Brand (HKD)</h3><canvas id="chartBrand"></canvas></div>
         <div class="dash-card"><h3>Sales by Product Type (HKD)</h3><canvas id="chartProduct"></canvas></div>
         <div class="dash-card"><h3>RFID vs Other Products (HKD)</h3><canvas id="chartRfid"></canvas></div>
-        <div class="dash-card dash-full"><h3>Monthly Sales Trend (HKD)</h3><canvas id="chartTrend"></canvas></div>
-        <div class="dash-card dash-full"><h3>Top 15 Customers by Sales (HKD)</h3><canvas id="chartVendors"></canvas></div>
+        <div class="dash-card"><h3>Monthly Sales Trend (HKD)</h3><canvas id="chartTrend"></canvas></div>
+        <div class="dash-card dash-full"><h3>Top 15 Customers by Sales (HKD)</h3><canvas id="chartCustomers"></canvas></div>
+      </div>
+      <!-- Tab 2: Brand Analysis -->
+      <div id="tabBrand" class="dash-grid" style="display:none">
+        <div class="dash-card"><h3>Sales by Brand (HKD)</h3><canvas id="chartBrandSales"></canvas></div>
+        <div class="dash-card"><h3>Product Type by Brand (HKD)</h3><canvas id="chartBrandProduct"></canvas></div>
+        <div class="dash-card"><h3>RFID vs Other Products by Brand</h3><canvas id="chartBrandRfid"></canvas></div>
+        <div class="dash-card"><h3>Brand Mix (%)</h3><canvas id="chartBrandMix"></canvas></div>
+        <div class="dash-card dash-full"><h3>Top 15 Customers by Brand (HKD)</h3><canvas id="chartBrandCustomers"></canvas></div>
+      </div>
+      <!-- Tab 3: Period Comparison -->
+      <div id="tabPeriod" class="dash-grid" style="display:none">
+        <div class="dash-card dash-full"><h3>Quarterly Sales Comparison (HKD)</h3><canvas id="chartQuarter"></canvas></div>
+        <div class="dash-card dash-full"><h3>Year-over-Year Sales (HKD)</h3><canvas id="chartYoY"></canvas></div>
+        <div class="dash-card"><h3>Quarterly Sales by Country (HKD)</h3><canvas id="chartQCountry"></canvas></div>
+        <div class="dash-card"><h3>Quarterly Sales by Brand (HKD)</h3><canvas id="chartQBrand"></canvas></div>
       </div>
     </div>
   </div>
@@ -1191,14 +1215,44 @@ function clearDashFilter(){
   renderDashboard();
 }
 
+var currentDashTab='overview';
+function setDashTab(tab){
+  currentDashTab=tab;
+  var labels={overview:'Sales Overview',brand:'Brand Analysis',period:'Period Comparison'};
+  document.querySelectorAll('.dash-tab').forEach(function(b){b.classList.toggle('active',b.textContent===labels[tab]);});
+  document.getElementById('tabOverview').style.display=tab==='overview'?'':'none';
+  document.getElementById('tabBrand').style.display=tab==='brand'?'':'none';
+  document.getElementById('tabPeriod').style.display=tab==='period'?'':'none';
+  renderCurrentTab();
+}
 function renderDashboard(){
   renderKpis();
+  renderCurrentTab();
+}
+function renderCurrentTab(){
+  if(currentDashTab==='overview')renderOverviewTab();
+  else if(currentDashTab==='brand')renderBrandTab();
+  else if(currentDashTab==='period')renderPeriodTab();
+}
+function renderOverviewTab(){
   renderChart('chartCountry','country','salesHKD','bar');
-  renderChart('chartBrand','brand','salesHKD','bar');
   renderChart('chartProduct','productType','salesHKD','doughnut');
-  renderRfid();
+  renderRfid('chartRfid',dashFiltered);
   renderTrend();
-  renderVendors();
+  renderCustomers('chartCustomers',dashFiltered);
+}
+function renderBrandTab(){
+  renderChart('chartBrandSales','brand','salesHKD','bar');
+  renderBrandProduct();
+  renderBrandRfid();
+  renderBrandMix();
+  renderBrandCustomers();
+}
+function renderPeriodTab(){
+  renderQuarterly();
+  renderYoY();
+  renderQByDimension('chartQCountry','country');
+  renderQByDimension('chartQBrand','brand');
 }
 
 function renderKpis(){
@@ -1264,21 +1318,205 @@ function renderChart(canvasId,groupKey,valueKey,type){
   dashCharts[canvasId]=new Chart(ctx,cfg);
 }
 
-function renderRfid(){
+function renderRfid(canvasId,rows){
   var rfid=0,other=0;
-  dashFiltered.forEach(function(r){
-    if(r.productType.toUpperCase()==='RFID') rfid+=r.salesHKD;
+  rows.forEach(function(r){
+    if((r.productType||'').toUpperCase()==='RFID') rfid+=r.salesHKD;
     else other+=r.salesHKD;
   });
-  if(dashCharts['chartRfid']){dashCharts['chartRfid'].destroy();}
-  var ctx=document.getElementById('chartRfid').getContext('2d');
-  dashCharts['chartRfid']=new Chart(ctx,{
+  if(dashCharts[canvasId]){dashCharts[canvasId].destroy();}
+  var ctx=document.getElementById(canvasId).getContext('2d');
+  var total=rfid+other;
+  dashCharts[canvasId]=new Chart(ctx,{
     type:'doughnut',
     data:{labels:['RFID','Other Products'],datasets:[{data:[rfid,other],backgroundColor:['#E21B1B','#1565C0'],borderWidth:0}]},
     options:{responsive:true,maintainAspectRatio:true,
       plugins:{legend:{position:'right',labels:{font:{family:'DM Sans',size:12}}},
-        tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+fmtNum(ctx.raw)+' ('+Math.round(ctx.raw/(rfid+other)*100)+'%)';}}}
+        tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+fmtNum(ctx.raw)+' ('+(total?Math.round(ctx.raw/total*100):0)+'%)';}}}
       }
+    }
+  });
+}
+
+function renderCustomers(canvasId,rows){
+  var agg={};
+  rows.forEach(function(r){
+    var k=r.customer||'Unknown';
+    agg[k]=(agg[k]||0)+r.salesHKD;
+  });
+  var entries=Object.entries(agg).sort(function(a,b){return b[1]-a[1];}).slice(0,15);
+  var labels=entries.map(function(e){return e[0];});
+  var data=entries.map(function(e){return e[1];});
+  if(dashCharts[canvasId]){dashCharts[canvasId].destroy();}
+  var ctx=document.getElementById(canvasId).getContext('2d');
+  dashCharts[canvasId]=new Chart(ctx,{
+    type:'bar',
+    data:{labels:labels,datasets:[{label:'Sales HKD',data:data,backgroundColor:DASH_COLORS.slice(0,15),borderRadius:4,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:true,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtNum(ctx.raw)+' HKD';}}}},
+      scales:{x:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}},y:{ticks:{font:{family:'DM Sans',size:11}}}}
+    }
+  });
+}
+
+// === BRAND TAB ===
+function renderBrandProduct(){
+  var brands={};
+  dashFiltered.forEach(function(r){
+    var b=r.brand||'Unknown';
+    if(!brands[b])brands[b]={};
+    var pt=r.productType||'Unknown';
+    brands[b][pt]=(brands[b][pt]||0)+r.salesHKD;
+  });
+  var brandNames=Object.keys(brands).sort(function(a,b){
+    var ta=0,tb=0;Object.values(brands[a]).forEach(function(v){ta+=v;});Object.values(brands[b]).forEach(function(v){tb+=v;});return tb-ta;
+  });
+  var allPts=new Set();
+  brandNames.forEach(function(b){Object.keys(brands[b]).forEach(function(pt){allPts.add(pt);});});
+  var ptList=[...allPts].sort();
+  var datasets=ptList.map(function(pt,i){
+    return {label:pt,data:brandNames.map(function(b){return brands[b][pt]||0;}),backgroundColor:DASH_COLORS[i%DASH_COLORS.length],borderRadius:4,borderWidth:0};
+  });
+  if(dashCharts['chartBrandProduct']){dashCharts['chartBrandProduct'].destroy();}
+  var ctx=document.getElementById('chartBrandProduct').getContext('2d');
+  dashCharts['chartBrandProduct']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:brandNames,datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:10}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+fmtNum(ctx.raw);}}}},
+      scales:{x:{stacked:true,ticks:{font:{family:'DM Sans',size:11}}},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}}}
+    }
+  });
+}
+
+function renderBrandRfid(){
+  var brands={};
+  dashFiltered.forEach(function(r){
+    var b=r.brand||'Unknown';
+    if(!brands[b])brands[b]={rfid:0,other:0};
+    if((r.productType||'').toUpperCase()==='RFID')brands[b].rfid+=r.salesHKD;
+    else brands[b].other+=r.salesHKD;
+  });
+  var brandNames=Object.keys(brands).sort(function(a,b){return(brands[b].rfid+brands[b].other)-(brands[a].rfid+brands[a].other);});
+  if(dashCharts['chartBrandRfid']){dashCharts['chartBrandRfid'].destroy();}
+  var ctx=document.getElementById('chartBrandRfid').getContext('2d');
+  dashCharts['chartBrandRfid']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:brandNames,datasets:[
+      {label:'RFID',data:brandNames.map(function(b){return brands[b].rfid;}),backgroundColor:'#E21B1B',borderRadius:4,borderWidth:0},
+      {label:'Other',data:brandNames.map(function(b){return brands[b].other;}),backgroundColor:'#1565C0',borderRadius:4,borderWidth:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:11}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+fmtNum(ctx.raw);}}}},
+      scales:{x:{stacked:true,ticks:{font:{family:'DM Sans',size:11}}},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}}}
+    }
+  });
+}
+
+function renderBrandMix(){
+  var agg={};
+  dashFiltered.forEach(function(r){var b=r.brand||'Unknown';agg[b]=(agg[b]||0)+r.salesHKD;});
+  var entries=Object.entries(agg).sort(function(a,b){return b[1]-a[1];});
+  if(dashCharts['chartBrandMix']){dashCharts['chartBrandMix'].destroy();}
+  var ctx=document.getElementById('chartBrandMix').getContext('2d');
+  var total=entries.reduce(function(s,e){return s+e[1];},0);
+  dashCharts['chartBrandMix']=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:entries.map(function(e){return e[0];}),datasets:[{data:entries.map(function(e){return e[1];}),backgroundColor:DASH_COLORS.slice(0,entries.length),borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'right',labels:{font:{family:'DM Sans',size:11}}},
+        tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+fmtNum(ctx.raw)+' ('+(total?Math.round(ctx.raw/total*100):0)+'%)';}}}
+      }
+    }
+  });
+}
+
+function renderBrandCustomers(){
+  var brand=document.getElementById('dashBrand').value;
+  var rows=brand!=='all'?dashFiltered.filter(function(r){return r.brand===brand;}):dashFiltered;
+  renderCustomers('chartBrandCustomers',rows);
+}
+
+// === PERIOD TAB ===
+function getQuarter(monthNo){
+  if(monthNo<=3)return 'Q1';if(monthNo<=6)return 'Q2';if(monthNo<=9)return 'Q3';return 'Q4';
+}
+
+function renderQuarterly(){
+  var agg={};
+  dashFiltered.forEach(function(r){
+    var q=r.year+' '+getQuarter(r.monthNo);
+    agg[q]=(agg[q]||0)+r.salesHKD;
+  });
+  var labels=Object.keys(agg).sort();
+  var data=labels.map(function(l){return agg[l];});
+  if(dashCharts['chartQuarter']){dashCharts['chartQuarter'].destroy();}
+  var ctx=document.getElementById('chartQuarter').getContext('2d');
+  dashCharts['chartQuarter']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:labels,datasets:[{label:'Sales HKD',data:data,backgroundColor:labels.map(function(l){
+      var y=l.split(' ')[0];return y==='2024'?'#1565C0':y==='2025'?'#2E7D32':'#E21B1B';
+    }),borderRadius:4,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtNum(ctx.raw)+' HKD';}}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}},x:{ticks:{font:{family:'DM Sans',size:11}}}}
+    }
+  });
+}
+
+function renderYoY(){
+  var monthOrder=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var years={};
+  dashFiltered.forEach(function(r){
+    var y=r.year||'Unknown';
+    if(!years[y])years[y]={};
+    years[y][r.month]=(years[y][r.month]||0)+r.salesHKD;
+  });
+  var yearList=Object.keys(years).sort();
+  var allMonths=new Set();
+  yearList.forEach(function(y){Object.keys(years[y]).forEach(function(m){allMonths.add(m);});});
+  var months=[...allMonths].sort(function(a,b){return monthOrder.indexOf(a)-monthOrder.indexOf(b);});
+  var yearColors={'2024':'#1565C0','2025':'#2E7D32','2026':'#E21B1B','2027':'#E8A317'};
+  var datasets=yearList.map(function(y){
+    return {label:y,data:months.map(function(m){return years[y][m]||0;}),borderColor:yearColors[y]||'#777',backgroundColor:(yearColors[y]||'#777')+'22',fill:true,tension:0.3,pointRadius:4,borderWidth:2};
+  });
+  if(dashCharts['chartYoY']){dashCharts['chartYoY'].destroy();}
+  var ctx=document.getElementById('chartYoY').getContext('2d');
+  dashCharts['chartYoY']=new Chart(ctx,{
+    type:'line',
+    data:{labels:months.map(function(m){return m.substring(0,3);}),datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:11}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+fmtNum(ctx.raw)+' HKD';}}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}},x:{ticks:{font:{family:'DM Sans',size:11}}}}
+    }
+  });
+}
+
+function renderQByDimension(canvasId,dimKey){
+  var agg={};
+  dashFiltered.forEach(function(r){
+    var q=r.year+' '+getQuarter(r.monthNo);
+    var d=r[dimKey]||'Unknown';
+    if(!agg[d])agg[d]={};
+    agg[d][q]=(agg[d][q]||0)+r.salesHKD;
+  });
+  var dims=Object.entries(agg).sort(function(a,b){
+    var ta=0,tb=0;Object.values(a[1]).forEach(function(v){ta+=v;});Object.values(b[1]).forEach(function(v){tb+=v;});return tb-ta;
+  }).slice(0,8).map(function(e){return e[0];});
+  var allQ=new Set();
+  dims.forEach(function(d){Object.keys(agg[d]).forEach(function(q){allQ.add(q);});});
+  var quarters=[...allQ].sort();
+  var datasets=dims.map(function(d,i){
+    return {label:d,data:quarters.map(function(q){return agg[d][q]||0;}),backgroundColor:DASH_COLORS[i%DASH_COLORS.length],borderRadius:4,borderWidth:0};
+  });
+  if(dashCharts[canvasId]){dashCharts[canvasId].destroy();}
+  var ctx=document.getElementById(canvasId).getContext('2d');
+  dashCharts[canvasId]=new Chart(ctx,{
+    type:'bar',
+    data:{labels:quarters,datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'top',labels:{font:{family:'DM Sans',size:10}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+fmtNum(ctx.raw);}}}},
+      scales:{x:{stacked:false,ticks:{font:{family:'DM Sans',size:11}}},y:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}}}
     }
   });
 }
@@ -1307,29 +1545,6 @@ function renderTrend(){
   });
 }
 
-function renderVendors(){
-  var agg={};
-  dashFiltered.forEach(function(r){
-    var k=r.customer||'Unknown';
-    agg[k]=(agg[k]||0)+r.salesHKD;
-  });
-  var entries=Object.entries(agg).sort(function(a,b){return b[1]-a[1];}).slice(0,15);
-  var labels=entries.map(function(e){return e[0];});
-  var data=entries.map(function(e){return e[1];});
-  if(dashCharts['chartVendors']){dashCharts['chartVendors'].destroy();}
-  var ctx=document.getElementById('chartVendors').getContext('2d');
-  dashCharts['chartVendors']=new Chart(ctx,{
-    type:'bar',
-    data:{labels:labels,datasets:[{
-      label:'Sales HKD',data:data,
-      backgroundColor:DASH_COLORS.slice(0,15),borderRadius:4,borderWidth:0
-    }]},
-    options:{responsive:true,maintainAspectRatio:true,indexAxis:'y',
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtNum(ctx.raw)+' HKD';}}}},
-      scales:{x:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}},y:{ticks:{font:{family:'DM Sans',size:11}}}}
-    }
-  });
-}
 </script>
 </body>
 </html>
