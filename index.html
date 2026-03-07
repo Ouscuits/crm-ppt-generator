@@ -19,6 +19,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 .lib-err{background:#3a0000;color:#EF5350;border:1px solid #E21B1B}
 .wrap{max-width:1160px;margin:0 auto;padding:28px 20px;position:relative;z-index:1}
 .upload-zone{border:2px dashed #D0D0D0;border-radius:10px;padding:12px 24px;text-align:center;background:#fff;cursor:pointer;transition:all .25s;max-width:400px;margin:0 auto}
+.mode-select{display:flex;gap:12px;justify-content:center;margin-bottom:18px}
+.mode-btn{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:10px 28px;border:2px solid var(--light);border-radius:10px;background:#fff;color:var(--mid);cursor:pointer;transition:all .2s}
+.mode-btn:hover{border-color:var(--red);color:var(--red)}
+.mode-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
+.dash-hidden{display:none!important}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+.kpi-card{background:#fff;border-radius:12px;padding:20px;border:1px solid var(--light);text-align:center;border-top:3px solid var(--red)}
+.kpi-val{font-size:28px;font-weight:700;font-family:'Space Mono',monospace;color:var(--dark)}
+.kpi-lbl{font-size:11px;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.dash-card{background:#fff;border-radius:12px;padding:20px;border:1px solid var(--light)}
+.dash-card h3{font-size:14px;font-weight:700;margin-bottom:12px}
+.dash-card canvas{width:100%!important;max-height:300px}
+.dash-full{grid-column:1/-1}
+.dash-filters{background:#fff;border-radius:12px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;gap:12px;border:1px solid var(--light);flex-wrap:wrap}
+.dash-filters label{font-size:12px;font-weight:600;white-space:nowrap}
 .upload-zone:hover,.upload-zone.over{border-color:var(--red);background:#FFF8F8;box-shadow:0 8px 32px rgba(226,27,27,.08)}
 .upload-icon{font-size:28px;opacity:.2;margin-bottom:4px;display:block}
 .upload-zone h2{font-size:15px;font-weight:600;margin-bottom:3px}
@@ -97,10 +113,41 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
   <div style="text-align:center;margin-bottom:16px">
     <video src="sml-animation.mp4" autoplay muted loop playsinline style="width:360px;border-radius:10px"></video>
   </div>
-  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-    <h2>Upload your CRM Excel file</h2>
+  <div class="mode-select" id="modeSelect">
+    <button class="mode-btn active" id="modeCrm" onclick="setMode('crm')">CRM Report</button>
+    <button class="mode-btn" id="modeDash" onclick="setMode('dash')">Sales Dashboard</button>
   </div>
-  <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+  <div id="crmSection">
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <h2>Upload your CRM Excel file</h2>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+  </div>
+  <div id="dashSection" class="dash-hidden">
+    <div class="upload-zone" id="dashUploadZone" onclick="document.getElementById('dashFileInput').click()">
+      <h2>Upload your Power BI Sales file</h2>
+    </div>
+    <input type="file" id="dashFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+    <div id="dashContent" class="dash-hidden">
+      <div class="dash-filters" id="dashFilters">
+        <label>Filters:</label>
+        <select class="sel" id="dashCountry" onchange="applyDashFilter()"><option value="all">All Countries</option></select>
+        <select class="sel" id="dashBrand" onchange="applyDashFilter()"><option value="all">All Brands</option></select>
+        <select class="sel" id="dashCompany" onchange="applyDashFilter()"><option value="all">All Companies</option></select>
+        <select class="sel" id="dashMonth" onchange="applyDashFilter()"><option value="all">All Months</option></select>
+        <button class="btn-clear" onclick="clearDashFilter()">Clear</button>
+      </div>
+      <div class="kpi-row" id="dashKpis"></div>
+      <div class="dash-grid">
+        <div class="dash-card"><h3>Sales by Country (HKD)</h3><canvas id="chartCountry"></canvas></div>
+        <div class="dash-card"><h3>Sales by Brand (HKD)</h3><canvas id="chartBrand"></canvas></div>
+        <div class="dash-card"><h3>Sales by Product Type (HKD)</h3><canvas id="chartProduct"></canvas></div>
+        <div class="dash-card"><h3>Quantity by Company (Pcs)</h3><canvas id="chartCompany"></canvas></div>
+        <div class="dash-card dash-full"><h3>Monthly Sales Trend (HKD)</h3><canvas id="chartTrend"></canvas></div>
+        <div class="dash-card dash-full"><h3>Top 15 Vendors by Sales (HKD)</h3><canvas id="chartVendors"></canvas></div>
+      </div>
+    </div>
+  </div>
   <div class="msg" id="msg"></div>
   <div class="api-section" id="apiSection" style="display:none!important">
     <label>🤖 Claude API Key:</label>
@@ -153,6 +200,8 @@ function loadScript(urls,ok,fail){var i=0;function next(){if(i>=urls.length){fai
 function findPptx(){var names=['PptxGenJS','pptxgen','PptxGenJs','pptxgenjs'];for(var i=0;i<names.length;i++){var c=window[names[i]];if(typeof c==='function')return c;if(c&&c.default&&typeof c.default==='function')return c.default;}return null;}
 loadScript(['https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js','https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'],function(){xlsxReady=true;updateLibStatus();},function(){setLibErr('XLSX');});
 loadScript(['https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js','https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js','https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js'],function(){PptxLib=findPptx();pptxReady=!!PptxLib;updateLibStatus();if(!pptxReady)setLibErr('PptxGenJS');},function(){setLibErr('PptxGenJS');});
+var chartReady=false;
+loadScript(['https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'],function(){chartReady=true;},function(){console.error('Chart.js failed to load');});
 
 var allRows=[],filteredRows=[],groupBy='country',selectedMonths=[],selectedYear='all',allMonths=[],allYears=[];
 
@@ -845,6 +894,241 @@ async function buildPptx(name,rows,groupByMode){
   var safeName=name.replace(/[^\w\s]/g,'').replace(/\s+/g,'_');
   var safePer=periodLabel.replace(/[,\s]+/g,'_').replace(/[^\w_]/g,'');
   await pptx.writeFile({fileName:'SML_Report_'+safeName+'_'+safePer+'.pptx'});
+}
+
+// === MODE SWITCHING ===
+var currentMode='crm';
+function setMode(mode){
+  currentMode=mode;
+  document.getElementById('modeCrm').classList.toggle('active',mode==='crm');
+  document.getElementById('modeDash').classList.toggle('active',mode==='dash');
+  document.getElementById('crmSection').classList.toggle('dash-hidden',mode!=='crm');
+  document.getElementById('dashSection').classList.toggle('dash-hidden',mode!=='dash');
+  // Hide CRM-specific sections when in dash mode
+  var crmEls=['filterBar','summaryBar','progressWrap','grid'];
+  crmEls.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display=(mode==='crm')?'':'none';
+  });
+}
+
+// === DASHBOARD ===
+var dashData=[],dashFiltered=[],dashCharts={};
+var DASH_COLORS=['#E21B1B','#1565C0','#2E7D32','#E8A317','#7B1FA2','#00838F','#EF6C00','#AD1457','#4E342E','#37474F','#1B5E20','#B71C1C','#0D47A1','#F57F17','#4A148C'];
+
+var duz=document.getElementById('dashUploadZone');
+duz.addEventListener('dragover',function(e){e.preventDefault();duz.classList.add('over');});
+duz.addEventListener('dragleave',function(){duz.classList.remove('over');});
+duz.addEventListener('drop',function(e){e.preventDefault();duz.classList.remove('over');handleDashFile(e.dataTransfer.files[0]);});
+document.getElementById('dashFileInput').addEventListener('change',function(){handleDashFile(this.files[0]);this.value='';});
+
+function handleDashFile(file){
+  if(!file)return;
+  if(!xlsxReady){showMsg('XLSX not ready yet.','err');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var raw=XLSX.utils.sheet_to_json(ws,{defval:''});
+      dashData=raw.map(function(r){
+        return {
+          day:Number(r['[Day]'])||0,
+          qty:Number(r['[Invoice_QTY__Pcs_2]'])||0,
+          month:String(r['[Month]']||'').trim(),
+          monthNo:Number(r['[MonthNo]'])||0,
+          salesHKD:Number(r['[Sales_Amount_in_HKD]'])||0,
+          salesUSD:Number(r['[SumAmount_USD]'])||0,
+          year:String(r['[Year]']||'').trim(),
+          customer:String(r['Customer Info[Customer Name]']||'').trim(),
+          country:String(r['DB Country name.Country name SP']||'').trim(),
+          brand:String(r['Program[Main Program Name]']||r['DB program Name SP.Program Name SP']||'').trim(),
+          subProgram:String(r['Program[Sub Program Name]']||'').trim(),
+          callOut:String(r['Sales Details[Call Out]']||'').trim(),
+          company:String(r['Sales Details[Company]']||'').trim(),
+          productType:String(r['Sales Details[Product Type Eng Desc]']||'').trim(),
+          vendor:String(r['Sales Details[Vendor Name]']||'').trim(),
+          source:String(r['Sales Details[Source]']||'').trim()
+        };
+      });
+      showMsg('Loaded '+dashData.length+' records.','ok');
+      initDashFilters();
+      dashFiltered=dashData.slice();
+      renderDashboard();
+      document.getElementById('dashContent').classList.remove('dash-hidden');
+      document.getElementById('dashUploadZone').style.display='none';
+    }catch(ex){
+      showMsg('Error: '+ex.message,'err');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function initDashFilters(){
+  var countries=uniqueDash('country');
+  var brands=uniqueDash('brand');
+  var companies=uniqueDash('company');
+  var months=dashData.map(function(r){return r.month}).filter(Boolean);
+  var monthOrder=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  months=[...new Set(months)].sort(function(a,b){return monthOrder.indexOf(a)-monthOrder.indexOf(b);});
+  fillSelect('dashCountry',countries);
+  fillSelect('dashBrand',brands);
+  fillSelect('dashCompany',companies);
+  fillSelect('dashMonth',months);
+}
+function uniqueDash(key){
+  return [...new Set(dashData.map(function(r){return r[key]}).filter(Boolean))].sort();
+}
+function fillSelect(id,vals){
+  var sel=document.getElementById(id);
+  var first=sel.options[0].text;
+  sel.innerHTML='<option value="all">'+first+'</option>';
+  vals.forEach(function(v){
+    var o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o);
+  });
+}
+function applyDashFilter(){
+  var c=document.getElementById('dashCountry').value;
+  var b=document.getElementById('dashBrand').value;
+  var co=document.getElementById('dashCompany').value;
+  var m=document.getElementById('dashMonth').value;
+  dashFiltered=dashData.filter(function(r){
+    if(c!=='all'&&r.country!==c)return false;
+    if(b!=='all'&&r.brand!==b)return false;
+    if(co!=='all'&&r.company!==co)return false;
+    if(m!=='all'&&r.month!==m)return false;
+    return true;
+  });
+  renderDashboard();
+}
+function clearDashFilter(){
+  document.getElementById('dashCountry').value='all';
+  document.getElementById('dashBrand').value='all';
+  document.getElementById('dashCompany').value='all';
+  document.getElementById('dashMonth').value='all';
+  dashFiltered=dashData.slice();
+  renderDashboard();
+}
+
+function renderDashboard(){
+  renderKpis();
+  renderChart('chartCountry','country','salesHKD','bar');
+  renderChart('chartBrand','brand','salesHKD','bar');
+  renderChart('chartProduct','productType','salesHKD','doughnut');
+  renderChart('chartCompany','company','qty','bar');
+  renderTrend();
+  renderVendors();
+}
+
+function renderKpis(){
+  var totalHKD=0,totalUSD=0,totalQty=0,vendors=new Set(),customers=new Set();
+  dashFiltered.forEach(function(r){
+    totalHKD+=r.salesHKD;totalUSD+=r.salesUSD;totalQty+=r.qty;
+    if(r.vendor)vendors.add(r.vendor);
+    if(r.customer)customers.add(r.customer);
+  });
+  document.getElementById('dashKpis').innerHTML=
+    kpiHtml(fmtNum(totalHKD),'Sales (HKD)')+
+    kpiHtml(fmtNum(totalUSD),'Sales (USD)')+
+    kpiHtml(fmtQty(totalQty),'Quantity (Pcs)')+
+    kpiHtml(dashFiltered.length.toLocaleString(),'Records')+
+    kpiHtml(vendors.size.toLocaleString(),'Vendors')+
+    kpiHtml(customers.size.toLocaleString(),'Customers');
+}
+function kpiHtml(val,lbl){
+  return '<div class="kpi-card"><div class="kpi-val">'+val+'</div><div class="kpi-lbl">'+lbl+'</div></div>';
+}
+function fmtNum(n){
+  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
+  return n.toFixed(0);
+}
+function fmtQty(n){
+  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(0)+'K';
+  return n.toLocaleString();
+}
+
+function renderChart(canvasId,groupKey,valueKey,type){
+  var agg={};
+  dashFiltered.forEach(function(r){
+    var k=r[groupKey]||'Unknown';
+    agg[k]=(agg[k]||0)+r[valueKey];
+  });
+  var entries=Object.entries(agg).sort(function(a,b){return b[1]-a[1];});
+  var labels=entries.map(function(e){return e[0];});
+  var data=entries.map(function(e){return e[1];});
+  if(dashCharts[canvasId]){dashCharts[canvasId].destroy();}
+  var ctx=document.getElementById(canvasId).getContext('2d');
+  var cfg={
+    type:type,
+    data:{
+      labels:labels,
+      datasets:[{
+        data:data,
+        backgroundColor:DASH_COLORS.slice(0,labels.length),
+        borderWidth:0,
+        borderRadius:type==='bar'?4:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:true,
+      plugins:{legend:{display:type==='doughnut',position:'right',labels:{font:{family:'DM Sans',size:11}}},
+        tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+fmtNum(ctx.raw);}}}},
+      scales:type==='bar'?{y:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}},x:{ticks:{font:{family:'DM Sans',size:11}}}}:{}
+    }
+  };
+  if(type==='bar'){cfg.data.datasets[0].label=valueKey==='salesHKD'?'HKD':'Pcs';}
+  dashCharts[canvasId]=new Chart(ctx,cfg);
+}
+
+function renderTrend(){
+  var monthOrder=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var agg={};
+  dashFiltered.forEach(function(r){
+    var k=r.month||'Unknown';
+    agg[k]=(agg[k]||0)+r.salesHKD;
+  });
+  var labels=Object.keys(agg).sort(function(a,b){return monthOrder.indexOf(a)-monthOrder.indexOf(b);});
+  var data=labels.map(function(l){return agg[l];});
+  if(dashCharts['chartTrend']){dashCharts['chartTrend'].destroy();}
+  var ctx=document.getElementById('chartTrend').getContext('2d');
+  dashCharts['chartTrend']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:labels,datasets:[{
+      label:'Sales HKD',data:data,
+      backgroundColor:'#E21B1B',borderRadius:4,borderWidth:0
+    }]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtNum(ctx.raw)+' HKD';}}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}},x:{ticks:{font:{family:'DM Sans',size:11}}}}
+    }
+  });
+}
+
+function renderVendors(){
+  var agg={};
+  dashFiltered.forEach(function(r){
+    var k=r.vendor||'Unknown';
+    agg[k]=(agg[k]||0)+r.salesHKD;
+  });
+  var entries=Object.entries(agg).sort(function(a,b){return b[1]-a[1];}).slice(0,15);
+  var labels=entries.map(function(e){return e[0];});
+  var data=entries.map(function(e){return e[1];});
+  if(dashCharts['chartVendors']){dashCharts['chartVendors'].destroy();}
+  var ctx=document.getElementById('chartVendors').getContext('2d');
+  dashCharts['chartVendors']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:labels,datasets:[{
+      label:'Sales HKD',data:data,
+      backgroundColor:DASH_COLORS.slice(0,15),borderRadius:4,borderWidth:0
+    }]},
+    options:{responsive:true,maintainAspectRatio:true,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtNum(ctx.raw)+' HKD';}}}},
+      scales:{x:{beginAtZero:true,ticks:{callback:function(v){return fmtNum(v);},font:{family:'Space Mono',size:10}}},y:{ticks:{font:{family:'DM Sans',size:11}}}}
+    }
+  });
 }
 </script>
 </body>
