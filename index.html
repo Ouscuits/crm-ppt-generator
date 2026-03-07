@@ -316,6 +316,8 @@ function handleFile(file){
       if(!raw.length){showMsg('No data found.','err');return;}
       allRows=raw.map(parseRow).filter(function(r){return r.site&&r.site.trim();});
       showMsg('✓ '+allRows.length+' records · '+uniqueVals(allRows,'site').length+' countries · '+uniqueVals(allRows,'brand').length+' brands','ok');
+      document.body.classList.add('logo-compact');
+      document.getElementById('modeSelect').style.display='none';
       buildFilterOptions();applyFilter();
     }catch(ex){showMsg('Error: '+ex.message,'err');console.error(ex);}
   };
