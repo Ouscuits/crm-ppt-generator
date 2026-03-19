@@ -133,39 +133,103 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 .api-input{flex:1;min-width:260px;font-family:'Space Mono',monospace;font-size:11px;padding:7px 12px;border:2px solid var(--light);border-radius:8px;background:#fff;color:var(--dark)}
 .api-input:focus{outline:none;border-color:var(--red)}
 .api-hint{font-size:11px;color:var(--mid)}
+/* Login View */
+.login-card{background:#fff;border-radius:14px;padding:32px;max-width:380px;margin:0 auto;border:1px solid var(--light);box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.login-card h2{font-size:20px;margin-bottom:20px;text-align:center}
+.login-input{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 16px;border:2px solid var(--light);border-radius:10px;margin-bottom:12px;background:#fff;color:var(--dark)}
+.login-input:focus{outline:none;border-color:var(--red)}
+.login-error{font-family:'Space Mono',monospace;font-size:11px;color:#B71C1C;background:#FFEBEE;border:1px solid #FFCDD2;border-radius:8px;padding:8px 12px;margin-top:8px}
+/* Account Selector */
+.acct-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.acct-header .user-info{flex:1}
+.acct-header .user-name{font-size:16px;font-weight:700}
+.acct-header .user-role{font-size:11px;color:var(--mid);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.5px}
+.account-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.account-card{background:#fff;border-radius:14px;padding:24px;border:1px solid var(--light);border-left:4px solid var(--red);cursor:pointer;transition:all .2s}
+.account-card:hover{box-shadow:0 6px 24px rgba(226,27,27,.12);transform:translateY(-2px)}
+.account-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.account-responsible{font-size:13px;color:var(--dark);margin-bottom:2px}
+.account-email{font-size:11px;color:var(--mid);font-family:'Space Mono',monospace}
+/* App Bar */
+.app-bar{background:#fff;padding:10px 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--light);position:sticky;top:0;z-index:200}
+.app-bar .bar-account{font-size:16px;font-weight:700;color:var(--red);font-family:'Space Mono',monospace}
+.app-bar .bar-user{font-size:11px;color:var(--mid);font-family:'Space Mono',monospace}
+.app-bar .bar-spacer{flex:1}
+.bar-btn{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border:2px solid var(--light);border-radius:8px;background:#fff;color:var(--dark);cursor:pointer;transition:all .18s}
+.bar-btn:hover{border-color:var(--red);color:var(--red)}
+/* Admin Panel */
+.admin-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid var(--light);padding-bottom:0}
+.admin-tab-btn{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;padding:12px 24px;border:none;background:none;color:var(--mid);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.admin-tab-btn:hover{color:var(--dark)}
+.admin-tab-btn.active{color:var(--red);border-bottom-color:var(--red)}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;border:1px solid var(--light)}
+.admin-table th{background:var(--dark);color:#fff;padding:10px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;text-align:left}
+.admin-table td{padding:10px 14px;border-bottom:1px solid var(--light)}
+.admin-table tr:hover td{background:var(--gray)}
+.admin-form{background:#fff;border-radius:12px;padding:20px;border:1px solid var(--light);margin-bottom:16px}
+.admin-form h3{font-size:15px;margin-bottom:14px}
+.admin-form-row{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.admin-form-row .field{flex:1;min-width:180px}
+.admin-form-row .field label{font-size:12px;font-weight:600;display:block;margin-bottom:4px}
+.admin-form-row .field input,.admin-form-row .field select{width:100%;padding:8px 12px;border:2px solid var(--light);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px}
+.admin-form-row .field input:focus,.admin-form-row .field select:focus{outline:none;border-color:var(--red)}
+.admin-msg{font-family:'Space Mono',monospace;font-size:11px;padding:10px 14px;border-radius:8px;margin:10px 0;display:none}
+.admin-msg.show{display:block}
+.admin-msg.ok{background:#E8F5E9;color:#1B5E20;border:1px solid #A5D6A7}
+.admin-msg.err{background:#FFEBEE;color:#B71C1C;border:1px solid #FFCDD2}
+.role-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;font-family:'Space Mono',monospace;text-transform:uppercase}
+.role-badge.role-admin{background:#E3F2FD;color:#1565C0}
+.role-badge.role-user{background:#E8F5E9;color:#2E7D32}
 </style>
 </head>
 <body>
-<div class="admin-link" onclick="showAdminLogin()">Admin</div>
-<div class="admin-overlay" id="adminOverlay" onclick="if(event.target===this)closeAdmin()">
-  <div class="admin-panel">
-    <div id="adminLogin">
-      <h2>Admin Access</h2>
-      <input type="password" class="admin-input" id="adminPwd" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkAdmin()">
-      <button class="btn-red" onclick="checkAdmin()" style="width:100%">Login</button>
-      <div class="admin-status" id="adminMsg"></div>
+
+<!-- LOGIN VIEW -->
+<div id="loginView">
+  <div style="max-width:400px;margin:0 auto;padding:60px 20px">
+    <div style="text-align:center;margin-bottom:24px">
+      <video src="sml-animation.mp4" autoplay muted loop playsinline style="width:300px;border-radius:10px"></video>
     </div>
-    <div id="adminDashboard" style="display:none">
-      <h2>Data Management</h2>
-      <div id="dataStatus"></div>
-      <h3>Upload Current Year Data (2026)</h3>
-      <p style="font-size:11px;color:var(--mid);margin-bottom:8px">Upload Power BI Excel to update current year sales data.</p>
-      <div class="upload-zone" style="max-width:100%;margin:0" onclick="document.getElementById('adminFileInput').click()">
-        <h2>Upload Power BI Excel (select one or multiple files)</h2>
-      </div>
-      <input type="file" id="adminFileInput" accept=".xlsx,.xls,.csv" style="display:none" multiple>
-      <div class="admin-status" id="uploadStatus"></div>
-      <h3>Actions</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-sm" onclick="clearCurrentYear()">Clear Current Year Data</button>
-        <button class="btn-sm" onclick="exportAllData()">Export All Data (JSON)</button>
-      </div>
-      <div style="margin-top:16px;text-align:right">
-        <button class="btn-sm" onclick="closeAdmin()">Close</button>
-      </div>
+    <div class="login-card">
+      <h2>Sign In</h2>
+      <input type="email" class="login-input" id="loginEmail" placeholder="Email address" onkeydown="handleLoginKeydown(event)">
+      <input type="password" class="login-input" id="loginPassword" placeholder="Password" onkeydown="handleLoginKeydown(event)">
+      <button class="btn-red" id="loginBtn" onclick="handleLogin()" style="width:100%;margin-top:4px">Sign In</button>
+      <div class="login-error" id="loginError" style="display:none"></div>
     </div>
+    <p style="text-align:center;font-size:10px;color:#ccc;margin-top:16px;font-family:'Space Mono',monospace">SML CRM Tool</p>
   </div>
 </div>
+
+<!-- ACCOUNT SELECTOR -->
+<div id="accountSelector" style="display:none">
+  <div style="max-width:700px;margin:0 auto;padding:40px 20px">
+    <div style="text-align:center;margin-bottom:24px">
+      <video src="sml-animation.mp4" autoplay muted loop playsinline style="width:280px;border-radius:10px"></video>
+    </div>
+    <div class="acct-header">
+      <div class="user-info">
+        <div class="user-name" id="acctUserName"></div>
+        <div class="user-role" id="acctUserRole"></div>
+      </div>
+      <button class="bar-btn" id="acctAdminBtn" onclick="showAdminPanel()" style="display:none">Admin Panel</button>
+      <button class="bar-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+    <h2 style="font-size:18px;margin-bottom:14px">Select Account</h2>
+    <div class="account-cards" id="accountCards"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+  <div class="app-bar">
+    <span class="bar-account" id="accountNameDisplay"></span>
+    <span class="bar-spacer"></span>
+    <span class="bar-user" id="appUserDisplay"></span>
+    <button class="bar-btn" onclick="backToAccounts()">Switch Account</button>
+    <button class="bar-btn" id="appAdminBtn" onclick="showAdminPanel()" style="display:none">Admin</button>
+    <button class="bar-btn" onclick="handleLogout()">Sign Out</button>
+  </div>
 <div class="wrap">
   <div id="logoWrap" style="text-align:center;margin-bottom:16px;transition:all .3s">
     <video id="smlVideo" src="sml-animation.mp4" autoplay muted loop playsinline style="width:360px;border-radius:10px;transition:all .3s;cursor:pointer" onclick="goHome()"></video>
@@ -288,10 +352,119 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
   </div>
   <div class="grid" id="grid"></div>
 </div>
+</div><!-- /mainApp -->
+
+<!-- ADMIN VIEW -->
+<div id="adminView" style="display:none">
+  <div class="app-bar">
+    <span class="bar-account">Admin Panel</span>
+    <span class="bar-spacer"></span>
+    <button class="bar-btn" onclick="backToAccounts()">Back to Accounts</button>
+    <button class="bar-btn" onclick="handleLogout()">Sign Out</button>
+  </div>
+  <div class="wrap" style="max-width:1000px">
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" data-tab="users" onclick="setAdminTab('users')">Users</button>
+      <button class="admin-tab-btn" data-tab="accounts" onclick="setAdminTab('accounts')">Accounts</button>
+      <button class="admin-tab-btn" data-tab="data" onclick="setAdminTab('data')">Data Management</button>
+    </div>
+
+    <!-- Users Tab -->
+    <div id="adminUsersTab">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="font-size:16px">Users</h3>
+        <button class="btn-red" onclick="toggleUserForm()">+ Add User</button>
+      </div>
+      <div id="userFormContainer" style="display:none">
+        <div class="admin-form">
+          <h3 id="userFormTitle">Add New User</h3>
+          <div class="admin-form-row">
+            <div class="field"><label>Name</label><input type="text" id="userName" placeholder="Full name"></div>
+            <div class="field"><label>Email</label><input type="email" id="userEmail" placeholder="user@example.com"></div>
+          </div>
+          <div class="admin-form-row" id="userPasswordField">
+            <div class="field"><label>Password</label><input type="text" id="userPassword" placeholder="Temporary password (min 6 chars)"></div>
+          </div>
+          <div class="admin-form-row">
+            <div class="field"><label>Role</label>
+              <select id="userRole"><option value="user">User</option><option value="admin">Admin</option></select>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Assign Accounts</label>
+            <div id="userAccountChecks" style="max-height:150px;overflow-y:auto;padding:4px"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-red" id="userFormBtn" onclick="createUserSubmit()">Create User</button>
+            <button class="btn-sm" onclick="cancelUserForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="admin-msg" id="adminUserMsg"></div>
+      <div id="usersTableContainer"></div>
+    </div>
+
+    <!-- Accounts Tab -->
+    <div id="adminAccountsTab" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="font-size:16px">Accounts</h3>
+        <button class="btn-red" onclick="toggleAccountForm()">+ Add Account</button>
+      </div>
+      <div id="accountFormContainer" style="display:none">
+        <div class="admin-form">
+          <h3 id="accountFormTitle">Add New Account</h3>
+          <div class="admin-form-row">
+            <div class="field"><label>Account Name</label><input type="text" id="accountName" placeholder="e.g., INDITEX"></div>
+          </div>
+          <div class="admin-form-row">
+            <div class="field"><label>Responsible Person</label><input type="text" id="accountResponsible" placeholder="Full name"></div>
+            <div class="field"><label>Responsible Email</label><input type="email" id="accountEmail" placeholder="email@example.com"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-red" id="accountFormBtn" onclick="createAccountSubmit()">Create Account</button>
+            <button class="btn-sm" onclick="cancelAccountForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="admin-msg" id="adminAcctMsg"></div>
+      <div id="accountsTableContainer"></div>
+    </div>
+
+    <!-- Data Tab -->
+    <div id="adminDataTab" style="display:none">
+      <h3 style="font-size:16px;margin-bottom:14px">Data Management</h3>
+      <div class="admin-form">
+        <div class="admin-form-row">
+          <div class="field">
+            <label>Select Account</label>
+            <select id="adminDataAccount" onchange="onAdminDataAccountChange()">
+              <option value="">-- Select Account --</option>
+            </select>
+          </div>
+        </div>
+        <div id="adminDataStatus" style="margin:12px 0"></div>
+        <h3 style="font-size:14px;margin:16px 0 8px;color:var(--mid)">Upload Sales Data (Power BI Excel)</h3>
+        <p style="font-size:11px;color:var(--mid);margin-bottom:8px">Upload one or multiple Excel files. Data will be appended to existing records.</p>
+        <div class="upload-zone" style="max-width:100%;margin:0 0 12px 0" onclick="document.getElementById('adminDataFileInput').click()">
+          <h2>Upload Power BI Excel</h2>
+        </div>
+        <input type="file" id="adminDataFileInput" accept=".xlsx,.xls,.csv" style="display:none" multiple>
+        <div class="admin-msg" id="adminDataMsg"></div>
+        <h3 style="font-size:14px;margin:16px 0 8px;color:var(--mid)">Actions</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sm" onclick="clearAccountYear()">Clear Data by Year</button>
+          <button class="btn-sm" onclick="exportAccountData()">Export Data (JSON)</button>
+          <button class="btn-sm" style="border-color:#1565C0;color:#1565C0" onclick="migrateHistorical()">Migrate historical-data.json</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 var xlsxReady=false,pptxReady=false,PptxLib=null;
-function updateLibStatus(){var el=document.getElementById('libStatus');if(xlsxReady&&pptxReady){el.textContent='✓ Ready';el.className='lib-badge lib-ok';document.getElementById('apiSection').classList.add('show');}else{var p=[];if(!xlsxReady)p.push('XLSX');if(!pptxReady)p.push('PPTX');el.textContent='⏳ '+p.join(', ');el.className='lib-badge lib-loading';}}
-function setLibErr(lib){var el=document.getElementById('libStatus');el.textContent='✗ '+lib+' failed';el.className='lib-badge lib-err';}
+function updateLibStatus(){var el=document.getElementById('libStatus');if(!el)return;if(xlsxReady&&pptxReady){el.textContent='✓ Ready';el.className='lib-badge lib-ok';}else{var p=[];if(!xlsxReady)p.push('XLSX');if(!pptxReady)p.push('PPTX');el.textContent='⏳ '+p.join(', ');el.className='lib-badge lib-loading';}}
+function setLibErr(lib){var el=document.getElementById('libStatus');if(!el)return;el.textContent='✗ '+lib+' failed';el.className='lib-badge lib-err';}
 function loadScript(urls,ok,fail){var i=0;function next(){if(i>=urls.length){fail();return;}var s=document.createElement('script');s.src=urls[i];s.onload=ok;s.onerror=function(){i++;next();};document.head.appendChild(s);}next();}
 function findPptx(){var names=['PptxGenJS','pptxgen','PptxGenJs','pptxgenjs'];for(var i=0;i<names.length;i++){var c=window[names[i]];if(typeof c==='function')return c;if(c&&c.default&&typeof c.default==='function')return c.default;}return null;}
 loadScript(['https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js','https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'],function(){xlsxReady=true;updateLibStatus();},function(){setLibErr('XLSX');});
@@ -1029,133 +1202,16 @@ function setMode(mode){
   if(mode==='dash')loadDashboardData();
 }
 
-// === ADMIN ===
-var ADMIN_HASH='7a0a3d168e62bc577a12d17e525ea0f2';
-function md5simple(s){
-  // Simple hash for basic client-side check (not cryptographic security)
-  var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
-  return Math.abs(h).toString(16);
-}
-// IndexedDB for large data storage
-var dbName='sml_dashboard';var dbVersion=1;var db=null;
-function openDB(){
-  return new Promise(function(resolve,reject){
-    var req=indexedDB.open(dbName,dbVersion);
-    req.onupgradeneeded=function(e){
-      var d=e.target.result;
-      if(!d.objectStoreNames.contains('data'))d.createObjectStore('data');
-    };
-    req.onsuccess=function(e){db=e.target.result;resolve(db);};
-    req.onerror=function(e){reject(e);};
-  });
-}
-function dbPut(key,val){
-  return openDB().then(function(d){
-    return new Promise(function(resolve,reject){
-      var tx=d.transaction('data','readwrite');
-      tx.objectStore('data').put(val,key);
-      tx.oncomplete=resolve;tx.onerror=reject;
-    });
-  });
-}
-function dbGet(key){
-  return openDB().then(function(d){
-    return new Promise(function(resolve,reject){
-      var tx=d.transaction('data','readonly');
-      var req=tx.objectStore('data').get(key);
-      req.onsuccess=function(){resolve(req.result||[]);};
-      req.onerror=reject;
-    });
-  });
-}
-function dbDelete(key){
-  return openDB().then(function(d){
-    return new Promise(function(resolve,reject){
-      var tx=d.transaction('data','readwrite');
-      tx.objectStore('data').delete(key);
-      tx.oncomplete=resolve;tx.onerror=reject;
-    });
-  });
-}
-
-var adminLoggedIn=false;
-function showAdminLogin(){
-  document.getElementById('adminOverlay').classList.add('show');
-  if(adminLoggedIn)showAdminDashboard();
-}
-function closeAdmin(){document.getElementById('adminOverlay').classList.remove('show');}
-function checkAdmin(){
-  var pwd=document.getElementById('adminPwd').value;
-  if(pwd==='ASas1903&'){
-    adminLoggedIn=true;
-    showAdminDashboard();
-  }else{
-    var msg=document.getElementById('adminMsg');
-    msg.textContent='Incorrect password';msg.className='admin-status show err';
-  }
-}
-function showAdminDashboard(){
-  document.getElementById('adminLogin').style.display='none';
-  document.getElementById('adminDashboard').style.display='block';
-  updateDataStatus();
-}
-
-document.getElementById('adminFileInput').addEventListener('change',function(){handleAdminUpload(this.files);this.value='';});
-
-function handleAdminUpload(files){
-  if(!files||!files.length)return;
-  if(!xlsxReady){showAdminMsg('XLSX not ready yet.','err');return;}
-  var allParsed=[];
-  var processed=0;
-  var total=files.length;
-  showAdminMsg('Processing '+total+' file(s)...','ok');
-  for(var f=0;f<files.length;f++){
-    (function(file){
-      var reader=new FileReader();
-      reader.onload=function(e){
-        try{
-          var wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
-          var ws=wb.Sheets[wb.SheetNames[0]];
-          var raw=XLSX.utils.sheet_to_json(ws,{defval:''});
-          var parsed=parseExcelRows(raw);
-          allParsed=allParsed.concat(parsed);
-        }catch(ex){
-          showAdminMsg('Error in '+file.name+': '+ex.message,'err');
-        }
-        processed++;
-        if(processed===total){
-          dbPut('current_year',allParsed).then(function(){
-            showAdminMsg('Uploaded '+allParsed.length+' records from '+total+' file(s).','ok');
-            updateDataStatus();
-            loadDashboardData();
-          }).catch(function(e){showAdminMsg('Storage error: '+e,'err');});
-        }
-      };
-      reader.readAsBinaryString(file);
-    })(files[f]);
-  }
-}
-function showAdminMsg(txt,type){
-  var el=document.getElementById('uploadStatus');
-  el.textContent=txt;el.className='admin-status show '+type;
-}
-function clearCurrentYear(){
-  if(confirm('Clear all current year data?')){
-    dbDelete('current_year').then(function(){
-      showAdminMsg('Current year data cleared.','ok');
-      updateDataStatus();
-      loadDashboardData();
+// === ADMIN FILE INPUT (for Data tab) ===
+document.addEventListener('DOMContentLoaded', function() {
+  var adminFileInput = document.getElementById('adminDataFileInput');
+  if (adminFileInput) {
+    adminFileInput.addEventListener('change', function() {
+      handleAdminDataUpload(this.files);
+      this.value = '';
     });
   }
-}
-function exportAllData(){
-  dbGet('current_year').then(function(curr){
-    var all=(histDataFromFile||[]).concat(curr||[]);
-    var blob=new Blob([JSON.stringify(all)],{type:'application/json'});
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download='sml_all_data.json';a.click();
-  });
-}
+});
 
 // === DASHBOARD DATA ===
 var dashData=[],dashFiltered=[],dashCharts={};
@@ -1186,15 +1242,15 @@ function parseExcelRows(raw){
 }
 
 function loadDashboardData(){
+  if(!currentAccount) return;
   var loading=document.getElementById('dashLoading');
   loading.style.display='block';
   loading.textContent='Loading dashboard data...';
-  dbGet('current_year').then(function(curr){
-    var hist=histDataFromFile||[];
-    dashData=hist.concat(curr||[]);
+  fsGetSalesData(currentAccount).then(function(records){
+    dashData=records;
     if(dashData.length===0){
       loading.style.display='block';
-      loading.textContent='No data available. Admin must upload sales data.';
+      loading.textContent='No data available. Admin must upload sales data for this account.';
       document.getElementById('dashContent').classList.add('dash-hidden');
       document.body.classList.remove('logo-compact');
       document.getElementById('modeSelect').style.display='';
@@ -1207,27 +1263,10 @@ function loadDashboardData(){
     dashFiltered=dashData.slice();
     renderDashboard();
     document.getElementById('dashContent').classList.remove('dash-hidden');
+  }).catch(function(err){
+    loading.textContent='Error loading data: '+err.message;
   });
 }
-
-function updateDataStatus(){
-  dbGet('current_year').then(function(curr){
-    var hist=histDataFromFile||[];
-    curr=curr||[];
-    var html='<div style="font-size:12px;margin-bottom:12px">';
-    html+='<span class="year-tag hist">Historical (2024-2025): '+hist.length+' records</span> ';
-    html+='<span class="year-tag curr">Current Year (2026): '+curr.length+' records</span>';
-    html+='</div>';
-    document.getElementById('dataStatus').innerHTML=html;
-  });
-}
-
-// Load historical JSON from repo
-var histDataFromFile=null;
-fetch('historical-data.json').then(function(r){return r.json();}).then(function(data){
-  histDataFromFile=data&&data.length>0?data:[];
-  if(currentMode==='dash')loadDashboardData();
-}).catch(function(){histDataFromFile=[];if(currentMode==='dash')loadDashboardData();});
 
 function initDashFilters(){
   var countries=uniqueDash('country');
@@ -1788,5 +1827,13 @@ function renderTrend(){
 }
 
 </script>
+<!-- Firebase SDK (compat mode for CDN usage) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- App modules -->
+<script src="js/firebase-config.js"></script>
+<script src="js/firestore.js"></script>
+<script src="js/auth.js"></script>
 </body>
 </html>
