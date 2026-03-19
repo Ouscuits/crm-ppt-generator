@@ -55,7 +55,7 @@ function fsDeleteUser(uid) {
   return fbDb.collection('users').doc(uid).get().then(function(doc) {
     if (doc.exists) {
       var userData = doc.data();
-      var updates = (userData.accounts || []).map(function(accId) {
+      var updates = (userData.accounts || []).filter(function(id) { return id && id.trim(); }).map(function(accId) {
         return fbDb.collection('accounts').doc(accId).update({
           users: firebase.firestore.FieldValue.arrayRemove(uid)
         });

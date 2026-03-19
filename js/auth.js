@@ -341,7 +341,7 @@ function updateUserSubmit() {
 
   // Get current user data to compute account changes
   var oldUser = adminAllUsers.find(function(u) { return u.uid === adminEditingUser; });
-  var oldAccounts = oldUser ? (oldUser.accounts || []) : [];
+  var oldAccounts = (oldUser ? (oldUser.accounts || []) : []).filter(function(id) { return id && id.trim(); });
 
   // Accounts to add and remove
   var toAdd = newAccounts.filter(function(id) { return oldAccounts.indexOf(id) === -1; });
