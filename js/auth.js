@@ -96,7 +96,7 @@ function loadUserAccounts() {
   var adminBtn = document.getElementById('acctAdminBtn');
   if (adminBtn) adminBtn.style.display = currentUserData.role === 'admin' ? '' : 'none';
 
-  var accountIds = currentUserData.accounts || [];
+  var accountIds = (currentUserData.accounts || []).filter(function(id) { return id && id.trim(); });
   if (accountIds.length === 0) {
     container.innerHTML = '<p style="text-align:center;color:var(--mid);padding:40px 0">No accounts assigned. Contact admin.</p>';
     return;
