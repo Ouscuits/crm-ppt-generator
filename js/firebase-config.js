@@ -5,12 +5,12 @@
 // STEP 4: Replace the config below with your project's config
 
 var firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_PROJECT.firebaseapp.com",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_PROJECT.firebasestorage.app",
-  messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
-  appId: "REPLACE_WITH_YOUR_APP_ID"
+  apiKey: "AIzaSyBjJdk6ObajuXXiBefiJcIkTCFyfgjW4VY",
+  authDomain: "sml-crm-tool.firebaseapp.com",
+  projectId: "sml-crm-tool",
+  storageBucket: "sml-crm-tool.firebasestorage.app",
+  messagingSenderId: "101285569247",
+  appId: "1:101285569247:web:7bf067d6841b2aeaf77f6a"
 };
 
 firebase.initializeApp(firebaseConfig);
