@@ -65,11 +65,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 .dash-filters{background:#fff;border-radius:12px;padding:18px 24px;margin-bottom:16px;display:flex;align-items:center;gap:14px;border:1px solid var(--light);flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .dash-filters label{font-size:14px;font-weight:700;white-space:nowrap}
 .dash-filters .sel,.dash-filters .mdrop-btn{font-size:13px;padding:8px 14px}
-.logo-compact #logoWrap{position:fixed;top:10px;right:16px;z-index:200;margin:0;text-align:right}
-.logo-compact #smlVideo{display:none}
-.logo-compact #smlStatic{display:block}
-#smlStatic{display:none;height:288px}
-.logo-compact .wrap{max-width:1160px;margin:0 auto}
 .dash-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
 .dash-tab{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:12px 28px;border:2px solid var(--light);border-radius:10px;background:#fff;color:var(--mid);cursor:pointer;transition:all .2s}
 .dash-tab:hover{border-color:var(--red);color:var(--red);transform:translateY(-1px)}
@@ -179,7 +174,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 .account-responsible{font-size:13px;color:var(--dark);margin-bottom:2px}
 .account-email{font-size:11px;color:var(--mid);font-family:'Space Mono',monospace}
 /* App Bar */
-.app-bar{background:#fff;padding:10px 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--light);position:sticky;top:0;z-index:200}
+.app-bar{background:#fff;padding:8px 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--light);position:sticky;top:0;z-index:200}
 .app-bar .bar-account{font-size:16px;font-weight:700;color:var(--red);font-family:'Space Mono',monospace}
 .app-bar .bar-user{font-size:11px;color:var(--mid);font-family:'Space Mono',monospace}
 .app-bar .bar-spacer{flex:1}
@@ -253,7 +248,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
   <div class="app-bar">
     <span class="bar-account" id="accountNameDisplay"></span>
     <span class="bar-spacer"></span>
-    <img src="sml-primary.svg" alt="SML" style="height:28px;cursor:pointer" onclick="goHome()">
+    <img src="sml-primary.svg" alt="SML" style="height:110px;cursor:pointer" onclick="goHome()">
     <span class="bar-spacer"></span>
     <span class="bar-user" id="appUserDisplay"></span>
     <button class="bar-btn" onclick="backToAccounts()">Switch Account</button>
@@ -261,10 +256,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
     <button class="bar-btn" onclick="handleLogout()">Sign Out</button>
   </div>
 <div class="wrap">
-  <div id="logoWrap" style="text-align:center;margin-bottom:16px;transition:all .3s">
-    <video id="smlVideo" src="sml-animation.mp4" autoplay muted loop playsinline style="width:360px;border-radius:10px;transition:all .3s;cursor:pointer" onclick="goHome()"></video>
-    <img id="smlStatic" src="sml-primary.svg" alt="SML" style="cursor:pointer" onclick="goHome()">
-  </div>
   <div class="mode-select" id="modeSelect">
     <button class="mode-btn active" id="modeCrm" onclick="setMode('crm')">CRM Report</button>
     <button class="mode-btn" id="modeDash" onclick="setMode('dash')">Sales Dashboard</button>
@@ -551,8 +542,6 @@ function handleFile(file){
       if(!raw.length){showMsg('No data found.','err');return;}
       allRows=raw.map(parseRow).filter(function(r){return r.site&&r.site.trim();});
       showMsg('✓ '+allRows.length+' records · '+uniqueVals(allRows,'site').length+' countries · '+uniqueVals(allRows,'brand').length+' brands','ok');
-      document.body.classList.add('logo-compact');
-      document.getElementById('smlVideo').pause();
       document.getElementById('modeSelect').style.display='none';
       buildFilterOptions();applyFilter();
       // Save to Firestore for Pending Actions persistence
@@ -1238,7 +1227,6 @@ async function buildPptx(name,rows,groupByMode){
 
 // === MODE SWITCHING ===
 function goHome(){
-  document.body.classList.remove('logo-compact');
   document.getElementById('modeSelect').style.display='';
   document.getElementById('crmSection').classList.add('dash-hidden');
   document.getElementById('dashSection').classList.add('dash-hidden');
@@ -1267,7 +1255,6 @@ function setMode(mode){
     if(el) el.style.display=(mode==='crm')?'':'none';
   });
   if(mode==='crm'){
-    document.body.classList.remove('logo-compact');
     document.getElementById('modeSelect').style.display='';
     document.getElementById('dashContent').classList.add('dash-hidden');
   }
@@ -1325,12 +1312,12 @@ function loadDashboardData(){
       loading.style.display='block';
       loading.textContent='No data available. Admin must upload sales data for this account.';
       document.getElementById('dashContent').classList.add('dash-hidden');
-      document.body.classList.remove('logo-compact');
+
       document.getElementById('modeSelect').style.display='';
       return;
     }
     loading.style.display='none';
-    document.body.classList.add('logo-compact');
+
     document.getElementById('modeSelect').style.display='none';
     initDashFilters();
     dashFiltered=dashData.slice();
@@ -1903,8 +1890,6 @@ function renderTrend(){
 var paData=[],paFiltered=[];
 
 function loadPendingActions(){
-  document.body.classList.add('logo-compact');
-  document.getElementById('smlVideo').pause();
   document.getElementById('modeSelect').style.display='none';
   var loading=document.getElementById('actionsLoading');
   var content=document.getElementById('actionsContent');
@@ -2111,100 +2096,129 @@ function clearPaFilter(){
 }
 
 function sendPendingEmail(){
-  // Gather actions to include in email - filtered list, prioritize overdue + no followup
   var actions=paFiltered.length>0?paFiltered:paData;
   if(actions.length===0){alert('No pending actions to report.');return;}
-
   var overdue=actions.filter(function(r){return r.urgency==='overdue';});
   var dueSoon=actions.filter(function(r){return r.urgency==='due-soon';});
+  var upcoming=actions.filter(function(r){return r.urgency==='upcoming';});
   var noFollowup=actions.filter(function(r){return !r.hasFollowup;});
-
   var accountName=currentAccountData?currentAccountData.name:'CRM';
   var today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-
   var subject='Pending CRM Actions - '+accountName+' ('+today+')';
 
-  var body='PENDING CRM ACTIONS REPORT\n';
-  body+='Account: '+accountName+'\n';
-  body+='Date: '+today+'\n';
-  body+='Total pending: '+actions.length+' | Overdue: '+overdue.length+' | Due soon: '+dueSoon.length+' | No follow-up: '+noFollowup.length+'\n';
-  body+='\n========================================\n';
+  // Build HTML email body
+  var h='';
+  var S='style';
+  // KPI boxes
+  h+='<div '+S+'="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">';
+  h+=emailKpi(overdue.length,'Overdue','#E21B1B','#FFEBEE');
+  h+=emailKpi(dueSoon.length,'Due Soon','#E8A317','#FFF8E1');
+  h+=emailKpi(upcoming.length,'Upcoming','#2E7D32','#E8F5E9');
+  h+=emailKpi(noFollowup.length,'No Follow-up','#1565C0','#E3F2FD');
+  h+='</div>';
 
-  if(overdue.length>0){
-    body+='\nOVERDUE ACTIONS ('+overdue.length+'):\n';
-    body+='----------------------------------------\n';
-    overdue.forEach(function(r){
-      body+='\n  Vendor: '+r.vendor+'\n';
-      body+='  Country: '+r.site+' | Brand: '+r.brand+'\n';
-      body+='  Salesperson: '+r.salesperson+'\n';
-      body+='  Deadline: '+fmtDate(r.actionDate)+' ('+Math.abs(r.daysLeft)+' days overdue)\n';
-      body+='  Action: '+r.nextAction+'\n';
-      body+='  Follow-up visit: '+(r.hasFollowup?'Yes':'NO')+'\n';
-    });
-  }
+  // Build table for each section
+  if(overdue.length) h+=emailSection('Overdue Actions','#E21B1B',overdue);
+  if(dueSoon.length) h+=emailSection('Due Soon (next 7 days)','#E8A317',dueSoon);
+  if(upcoming.length<=20) h+=emailSection('Upcoming','#2E7D32',upcoming);
+  else h+='<p style="color:#777;font-size:13px;margin:12px 0">+ '+upcoming.length+' upcoming actions (see CRM tool for full list)</p>';
 
-  if(dueSoon.length>0){
-    body+='\nDUE SOON - NEXT 7 DAYS ('+dueSoon.length+'):\n';
-    body+='----------------------------------------\n';
-    dueSoon.forEach(function(r){
-      body+='\n  Vendor: '+r.vendor+'\n';
-      body+='  Country: '+r.site+' | Brand: '+r.brand+'\n';
-      body+='  Salesperson: '+r.salesperson+'\n';
-      body+='  Deadline: '+fmtDate(r.actionDate)+' ('+r.daysLeft+' days left)\n';
-      body+='  Action: '+r.nextAction+'\n';
-      body+='  Follow-up visit: '+(r.hasFollowup?'Yes':'NO')+'\n';
-    });
-  }
-
-  // Only show upcoming if small count to avoid huge email
-  var upcomingItems=actions.filter(function(r){return r.urgency==='upcoming';});
-  if(upcomingItems.length>0&&upcomingItems.length<=15){
-    body+='\nUPCOMING ('+upcomingItems.length+'):\n';
-    body+='----------------------------------------\n';
-    upcomingItems.forEach(function(r){
-      body+='\n  Vendor: '+r.vendor+' | Country: '+r.site+' | Brand: '+r.brand+'\n';
-      body+='  Salesperson: '+r.salesperson+' | Deadline: '+fmtDate(r.actionDate)+' ('+r.daysLeft+'d)\n';
-      body+='  Action: '+r.nextAction+'\n';
-    });
-  } else if(upcomingItems.length>15){
-    body+='\nUPCOMING: '+upcomingItems.length+' additional actions (not listed - filter in CRM tool for details)\n';
-  }
-
-  body+='\n========================================\n';
-  body+='Generated by SML CRM Tool\n';
-
-  showEmailModal(subject,body);
+  showEmailModal(subject,h,accountName,today,actions.length);
 }
 
-function showEmailModal(subject,body){
+function emailKpi(val,label,color,bg){
+  return '<div style="flex:1;min-width:120px;background:'+bg+';border-radius:10px;padding:14px 16px;text-align:center;border-top:3px solid '+color+'">'+
+    '<div style="font-size:28px;font-weight:700;color:'+color+';font-family:monospace">'+val+'</div>'+
+    '<div style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">'+label+'</div></div>';
+}
+
+function emailSection(title,color,rows){
+  var h='<div style="margin-bottom:20px">';
+  h+='<h3 style="font-size:14px;font-weight:700;color:'+color+';margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid '+color+'">'+title+' ('+rows.length+')</h3>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:Arial,sans-serif">';
+  h+='<tr style="background:#1A1A1A;color:#fff">';
+  h+='<th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Deadline</th>';
+  h+='<th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Days</th>';
+  h+='<th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Status</th>';
+  h+='<th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Vendor</th>';
+  h+='<th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Country</th>';
+  h+='<th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Salesperson</th>';
+  h+='<th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Action</th>';
+  h+='<th style="padding:8px 10px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Follow-up</th>';
+  h+='</tr>';
+  rows.forEach(function(r,i){
+    var bg=i%2===0?'#fff':'#F9F9F9';
+    var daysText=r.daysLeft<0?Math.abs(r.daysLeft)+'d ago':r.daysLeft===0?'Today':r.daysLeft+'d';
+    var ns=normStatus(r.status);
+    var sc=ns.toLowerCase();
+    var sColor=sc==='active'?'#2E7D32':sc==='potential'?'#1565C0':sc==='hold'?'#E8A317':sc==='no go'?'#E21B1B':'#777';
+    var sBg=sc==='active'?'#E8F5E9':sc==='potential'?'#E3F2FD':sc==='hold'?'#FFF8E1':sc==='no go'?'#FFEBEE':'#F4F4F4';
+    var fuColor=r.hasFollowup?'#2E7D32':'#E21B1B';
+    var fuText=r.hasFollowup?'Yes':'NO VISIT';
+    h+='<tr style="background:'+bg+'">';
+    h+='<td style="padding:7px 10px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;white-space:nowrap">'+fmtDate(r.actionDate)+'</td>';
+    h+='<td style="padding:7px 10px;border-bottom:1px solid #eee;font-family:monospace;font-weight:700;font-size:12px">'+daysText+'</td>';
+    h+='<td style="padding:7px 10px;border-bottom:1px solid #eee"><span style="background:'+sBg+';color:'+sColor+';font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px">'+escHtml(ns||'—')+'</span></td>';
+    h+='<td style="padding:7px 10px;border-bottom:1px solid #eee">'+escHtml(r.vendor)+'</td>';
+    h+='<td style="padding:7px 10px;border-bottom:1px solid #eee">'+escHtml(r.site)+'</td>';
+    h+='<td style="padding:7px 10px;border-bottom:1px solid #eee">'+escHtml(r.salesperson)+'</td>';
+    h+='<td style="padding:7px 10px;border-bottom:1px solid #eee;max-width:200px">'+escHtml(r.nextAction||'—')+'</td>';
+    h+='<td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:center;font-weight:700;font-size:11px;color:'+fuColor+'">'+fuText+'</td>';
+    h+='</tr>';
+  });
+  h+='</table></div>';
+  return h;
+}
+
+function showEmailModal(subject,htmlBody,accountName,today,totalCount){
+  // Full HTML email template
+  var fullHtml='<div style="max-width:800px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;color:#1A1A1A">';
+  fullHtml+='<div style="background:#1A1A1A;padding:20px 28px;border-radius:12px 12px 0 0;text-align:center">';
+  fullHtml+='<div style="color:#E21B1B;font-family:monospace;font-weight:700;font-size:22px;letter-spacing:3px">SML GROUP</div>';
+  fullHtml+='<div style="color:rgba(255,255,255,.6);font-size:11px;margin-top:4px;letter-spacing:1px">CRM PENDING ACTIONS REPORT</div>';
+  fullHtml+='</div>';
+  fullHtml+='<div style="background:#fff;padding:24px 28px;border:1px solid #E4E4E4;border-top:none">';
+  fullHtml+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:8px">';
+  fullHtml+='<div><span style="font-size:16px;font-weight:700;color:#E21B1B">'+escHtml(accountName)+'</span></div>';
+  fullHtml+='<div style="font-size:12px;color:#777;font-family:monospace">'+escHtml(today)+' &middot; '+totalCount+' actions</div>';
+  fullHtml+='</div>';
+  fullHtml+=htmlBody;
+  fullHtml+='</div>';
+  fullHtml+='<div style="background:#F4F4F4;padding:14px 28px;border-radius:0 0 12px 12px;border:1px solid #E4E4E4;border-top:none;text-align:center">';
+  fullHtml+='<span style="font-size:10px;color:#999;font-family:monospace">Generated by SML CRM Tool</span>';
+  fullHtml+='</div></div>';
+
   var overlay=document.createElement('div');
   overlay.id='emailOverlay';
   overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center';
   var panel=document.createElement('div');
-  panel.style.cssText='background:#fff;border-radius:14px;padding:28px;max-width:700px;width:90%;max-height:85vh;overflow-y:auto';
+  panel.style.cssText='background:#fff;border-radius:14px;padding:28px;max-width:900px;width:95%;max-height:90vh;display:flex;flex-direction:column';
   panel.innerHTML=
-    '<h3 style="font-size:18px;margin-bottom:16px;font-weight:700">Send Reminder Email</h3>'+
-    '<div style="margin-bottom:10px">'+
-      '<label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">To (email addresses, comma-separated):</label>'+
-      '<input type="text" id="emailTo" placeholder="recipient@example.com" style="width:100%;padding:10px 12px;border:2px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:DM Sans,sans-serif">'+
-    '</div>'+
-    '<div style="margin-bottom:10px">'+
-      '<label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Subject:</label>'+
-      '<input type="text" id="emailSubject" value="'+escHtml(subject)+'" style="width:100%;padding:10px 12px;border:2px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:DM Sans,sans-serif">'+
-    '</div>'+
-    '<div style="margin-bottom:14px">'+
-      '<label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Body:</label>'+
-      '<textarea id="emailBody" style="width:100%;height:280px;padding:12px;border:2px solid #E4E4E4;border-radius:8px;font-family:Space Mono,monospace;font-size:11px;resize:vertical;line-height:1.5">'+escHtml(body)+'</textarea>'+
-    '</div>'+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button class="pa-email-btn" id="emailSendBtn" onclick="doSendEmail()">Open in Email Client</button>'+
-      '<button class="btn-red" id="emailCopyBtn" onclick="doCopyEmail()">Copy All to Clipboard</button>'+
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">'+
+      '<h3 style="font-size:18px;font-weight:700;flex:1">Send Reminder Email</h3>'+
+      '<button class="pa-email-btn" onclick="doSendEmail()">Open in Email Client</button>'+
+      '<button class="btn-red" onclick="doCopyEmailHtml()">Copy HTML</button>'+
       '<button class="btn-sm" onclick="closeEmailModal()">Close</button>'+
     '</div>'+
-    '<div id="emailStatus" style="display:none;margin-top:10px;font-family:Space Mono,monospace;font-size:11px;padding:8px 12px;border-radius:8px"></div>';
+    '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">'+
+      '<div style="flex:1;min-width:200px">'+
+        '<label style="font-size:11px;font-weight:600;display:block;margin-bottom:3px">To:</label>'+
+        '<input type="text" id="emailTo" placeholder="recipient@example.com, ..." style="width:100%;padding:8px 12px;border:2px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:DM Sans,sans-serif">'+
+      '</div>'+
+      '<div style="flex:2;min-width:200px">'+
+        '<label style="font-size:11px;font-weight:600;display:block;margin-bottom:3px">Subject:</label>'+
+        '<input type="text" id="emailSubject" value="'+escHtml(subject)+'" style="width:100%;padding:8px 12px;border:2px solid #E4E4E4;border-radius:8px;font-size:13px;font-family:DM Sans,sans-serif">'+
+      '</div>'+
+    '</div>'+
+    '<div id="emailStatus" style="display:none;margin-bottom:10px;font-family:Space Mono,monospace;font-size:11px;padding:8px 12px;border-radius:8px"></div>'+
+    '<div id="emailPreview" style="flex:1;overflow-y:auto;border:1px solid #E4E4E4;border-radius:10px;background:#F9F9F9;padding:16px"></div>';
   overlay.appendChild(panel);
   overlay.addEventListener('click',function(e){if(e.target===overlay)closeEmailModal();});
   document.body.appendChild(overlay);
+  // Render HTML preview
+  document.getElementById('emailPreview').innerHTML=fullHtml;
+  // Store html for copy
+  panel.dataset.emailHtml=fullHtml;
   document.getElementById('emailTo').focus();
 }
 
@@ -2216,53 +2230,50 @@ function closeEmailModal(){
 function doSendEmail(){
   var to=(document.getElementById('emailTo').value||'').trim();
   var subj=document.getElementById('emailSubject').value||'';
-  var body=document.getElementById('emailBody').value||'';
-  var mailto='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
-
-  // mailto URLs have a ~2000 char limit in many browsers
-  if(mailto.length>2000){
-    // Open with subject only, show notice to paste body
-    var shortMailto='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj);
-    // Copy body to clipboard first
-    copyToClip(body).then(function(){
-      showEmailStatus('Body copied to clipboard. Paste it in the email that will open now.','ok');
-      setTimeout(function(){window.location.href=shortMailto;},800);
-    }).catch(function(){
-      showEmailStatus('Could not copy automatically. Please copy the body manually, then click "Open in Email Client" again.','err');
-    });
-  } else {
-    window.location.href=mailto;
-    showEmailStatus('Email client opened.','ok');
-  }
-}
-
-function doCopyEmail(){
-  var subj=document.getElementById('emailSubject').value||'';
-  var body=document.getElementById('emailBody').value||'';
-  var full='Subject: '+subj+'\n\n'+body;
-  copyToClip(full).then(function(){
-    showEmailStatus('Copied to clipboard.','ok');
-    var btn=document.getElementById('emailCopyBtn');
-    if(btn){btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy All to Clipboard';},2000);}
+  // Copy HTML to clipboard, then open mailto with subject only
+  var panel=document.querySelector('#emailOverlay > div');
+  var htmlContent=panel?panel.dataset.emailHtml:'';
+  copyHtmlToClip(htmlContent).then(function(){
+    showEmailStatus('Email content copied. Paste (Ctrl+V) in your email client.','ok');
+    setTimeout(function(){
+      window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj);
+    },600);
   }).catch(function(){
-    // Fallback: select the textarea
-    var ta=document.getElementById('emailBody');
-    if(ta){ta.focus();ta.select();document.execCommand('copy');}
-    showEmailStatus('Selected text — press Ctrl+C to copy.','ok');
+    showEmailStatus('Could not copy. Use "Copy HTML" button, then paste in your email.','err');
   });
 }
 
-function copyToClip(text){
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    return navigator.clipboard.writeText(text);
+function doCopyEmailHtml(){
+  var panel=document.querySelector('#emailOverlay > div');
+  var htmlContent=panel?panel.dataset.emailHtml:'';
+  copyHtmlToClip(htmlContent).then(function(){
+    showEmailStatus('Copied to clipboard. Paste in your email client to keep formatting.','ok');
+  }).catch(function(){
+    showEmailStatus('Copy failed. Try selecting the preview content manually and pressing Ctrl+C.','err');
+  });
+}
+
+function copyHtmlToClip(html){
+  // Try Clipboard API with HTML mime type (preserves formatting when pasting in email clients)
+  if(navigator.clipboard&&navigator.clipboard.write){
+    var blob=new Blob([html],{type:'text/html'});
+    var textBlob=new Blob([html.replace(/<[^>]*>/g,'')],{type:'text/plain'});
+    var item=new ClipboardItem({'text/html':blob,'text/plain':textBlob});
+    return navigator.clipboard.write([item]);
   }
-  // Fallback for older browsers
+  // Fallback: use execCommand with a hidden div
   return new Promise(function(resolve,reject){
-    var ta=document.createElement('textarea');
-    ta.value=text;ta.style.cssText='position:fixed;left:-9999px';
-    document.body.appendChild(ta);ta.select();
+    var div=document.createElement('div');
+    div.innerHTML=html;
+    div.style.cssText='position:fixed;left:-9999px;opacity:0';
+    document.body.appendChild(div);
+    var range=document.createRange();
+    range.selectNodeContents(div);
+    var sel=window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
     try{document.execCommand('copy');resolve();}catch(e){reject(e);}
-    finally{ta.remove();}
+    finally{sel.removeAllRanges();div.remove();}
   });
 }
 
