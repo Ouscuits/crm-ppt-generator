@@ -2262,7 +2262,7 @@ function showEmailModal(subject,htmlBody,accountName,today,totalCount){
   panel.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">'+
       '<h3 style="font-size:18px;font-weight:700;flex:1">Send Reminder Email</h3>'+
-      '<button class="pa-email-btn" onclick="doSelectAndCopy()">Select &amp; Copy Email</button>'+
+      '<button class="pa-email-btn" onclick="doSelectAndCopy()">Select &amp; Copy</button>'+
       '<button class="pa-email-btn" style="background:#1565C0" onclick="doOpenMailto()">Open Email Client</button>'+
       '<button class="btn-sm" onclick="closeEmailModal()">Close</button>'+
     '</div>'+
@@ -2277,21 +2277,12 @@ function showEmailModal(subject,htmlBody,accountName,today,totalCount){
       '</div>'+
     '</div>'+
     '<div id="emailStatus" style="display:none;margin-bottom:10px;font-family:Space Mono,monospace;font-size:11px;padding:8px 12px;border-radius:8px"></div>'+
-    '<div style="flex:1;overflow:hidden;border:1px solid #E4E4E4;border-radius:10px;min-height:300px">'+
-      '<iframe id="emailFrame" style="width:100%;height:100%;border:none;min-height:400px"></iframe>'+
-    '</div>';
+    '<p style="font-size:11px;color:#999;margin-bottom:6px">Preview — click "Select &amp; Copy" then paste (Ctrl+V) in your email:</p>'+
+    '<div id="emailPreview" style="flex:1;overflow-y:auto;border:1px solid #E4E4E4;border-radius:10px;background:#F9F9F9;padding:16px;min-height:300px;cursor:text"></div>';
   overlay.appendChild(panel);
   overlay.addEventListener('click',function(e){if(e.target===overlay)closeEmailModal();});
   document.body.appendChild(overlay);
-
-  // Write HTML into iframe so it renders independently
-  var frame=document.getElementById('emailFrame');
-  var frameDoc=frame.contentDocument||frame.contentWindow.document;
-  frameDoc.open();
-  frameDoc.write('<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:12px;font-family:Arial,Helvetica,sans-serif">'+fullHtml+'</body></html>');
-  frameDoc.close();
-  // Store for mailto
-  panel.dataset.emailHtml=fullHtml;
+  document.getElementById('emailPreview').innerHTML=fullHtml;
   document.getElementById('emailTo').focus();
 }
 
@@ -2301,33 +2292,31 @@ function closeEmailModal(){
 }
 
 function doSelectAndCopy(){
-  var frame=document.getElementById('emailFrame');
-  if(!frame)return;
-  var frameDoc=frame.contentDocument||frame.contentWindow.document;
-  var frameWin=frame.contentWindow;
-  // Select all content inside the iframe
-  var range=frameDoc.createRange();
-  range.selectNodeContents(frameDoc.body);
-  var sel=frameWin.getSelection();
+  var preview=document.getElementById('emailPreview');
+  if(!preview)return;
+  // Select all content of the preview div
+  var range=document.createRange();
+  range.selectNodeContents(preview);
+  var sel=window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
-  // Copy the selection (browser copies rendered HTML with styles)
-  try{
-    frameDoc.execCommand('copy');
-    showEmailStatus('Copied with formatting. Open your email client and paste with Ctrl+V.','ok');
-  }catch(e){
-    showEmailStatus('Auto-copy failed. The content is selected — press Ctrl+C now to copy.','err');
+  // Copy — execCommand on visible rendered content preserves formatting
+  var ok=false;
+  try{ok=document.execCommand('copy');}catch(e){}
+  if(ok){
+    showEmailStatus('Copied with formatting. Paste (Ctrl+V) in your email client.','ok');
+  } else {
+    showEmailStatus('Content selected. Press Ctrl+C to copy.','err');
   }
 }
 
 function doOpenMailto(){
   var to=(document.getElementById('emailTo').value||'').trim();
   var subj=document.getElementById('emailSubject').value||'';
-  // Try to copy first, then open mailto
   doSelectAndCopy();
   setTimeout(function(){
     window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj);
-  },400);
+  },500);
 }
 
 function showEmailStatus(msg,type){
