@@ -2262,8 +2262,8 @@ function showEmailModal(subject,htmlBody,accountName,today,totalCount){
   panel.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">'+
       '<h3 style="font-size:18px;font-weight:700;flex:1">Send Reminder Email</h3>'+
-      '<button class="pa-email-btn" onclick="doSendEmail()">Open in Email Client</button>'+
-      '<button class="btn-red" onclick="doCopyEmailHtml()">Copy HTML</button>'+
+      '<button class="pa-email-btn" onclick="doSelectAndCopy()">Select &amp; Copy Email</button>'+
+      '<button class="pa-email-btn" style="background:#1565C0" onclick="doOpenMailto()">Open Email Client</button>'+
       '<button class="btn-sm" onclick="closeEmailModal()">Close</button>'+
     '</div>'+
     '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">'+
@@ -2277,13 +2277,20 @@ function showEmailModal(subject,htmlBody,accountName,today,totalCount){
       '</div>'+
     '</div>'+
     '<div id="emailStatus" style="display:none;margin-bottom:10px;font-family:Space Mono,monospace;font-size:11px;padding:8px 12px;border-radius:8px"></div>'+
-    '<div id="emailPreview" style="flex:1;overflow-y:auto;border:1px solid #E4E4E4;border-radius:10px;background:#F9F9F9;padding:16px"></div>';
+    '<div style="flex:1;overflow:hidden;border:1px solid #E4E4E4;border-radius:10px;min-height:300px">'+
+      '<iframe id="emailFrame" style="width:100%;height:100%;border:none;min-height:400px"></iframe>'+
+    '</div>';
   overlay.appendChild(panel);
   overlay.addEventListener('click',function(e){if(e.target===overlay)closeEmailModal();});
   document.body.appendChild(overlay);
-  // Render HTML preview
-  document.getElementById('emailPreview').innerHTML=fullHtml;
-  // Store html for copy
+
+  // Write HTML into iframe so it renders independently
+  var frame=document.getElementById('emailFrame');
+  var frameDoc=frame.contentDocument||frame.contentWindow.document;
+  frameDoc.open();
+  frameDoc.write('<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:12px;font-family:Arial,Helvetica,sans-serif">'+fullHtml+'</body></html>');
+  frameDoc.close();
+  // Store for mailto
   panel.dataset.emailHtml=fullHtml;
   document.getElementById('emailTo').focus();
 }
@@ -2293,54 +2300,34 @@ function closeEmailModal(){
   if(el)el.remove();
 }
 
-function doSendEmail(){
+function doSelectAndCopy(){
+  var frame=document.getElementById('emailFrame');
+  if(!frame)return;
+  var frameDoc=frame.contentDocument||frame.contentWindow.document;
+  var frameWin=frame.contentWindow;
+  // Select all content inside the iframe
+  var range=frameDoc.createRange();
+  range.selectNodeContents(frameDoc.body);
+  var sel=frameWin.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  // Copy the selection (browser copies rendered HTML with styles)
+  try{
+    frameDoc.execCommand('copy');
+    showEmailStatus('Copied with formatting. Open your email client and paste with Ctrl+V.','ok');
+  }catch(e){
+    showEmailStatus('Auto-copy failed. The content is selected — press Ctrl+C now to copy.','err');
+  }
+}
+
+function doOpenMailto(){
   var to=(document.getElementById('emailTo').value||'').trim();
   var subj=document.getElementById('emailSubject').value||'';
-  // Copy HTML to clipboard, then open mailto with subject only
-  var panel=document.querySelector('#emailOverlay > div');
-  var htmlContent=panel?panel.dataset.emailHtml:'';
-  copyHtmlToClip(htmlContent).then(function(){
-    showEmailStatus('Email content copied. Paste (Ctrl+V) in your email client.','ok');
-    setTimeout(function(){
-      window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj);
-    },600);
-  }).catch(function(){
-    showEmailStatus('Could not copy. Use "Copy HTML" button, then paste in your email.','err');
-  });
-}
-
-function doCopyEmailHtml(){
-  var panel=document.querySelector('#emailOverlay > div');
-  var htmlContent=panel?panel.dataset.emailHtml:'';
-  copyHtmlToClip(htmlContent).then(function(){
-    showEmailStatus('Copied to clipboard. Paste in your email client to keep formatting.','ok');
-  }).catch(function(){
-    showEmailStatus('Copy failed. Try selecting the preview content manually and pressing Ctrl+C.','err');
-  });
-}
-
-function copyHtmlToClip(html){
-  // Try Clipboard API with HTML mime type (preserves formatting when pasting in email clients)
-  if(navigator.clipboard&&navigator.clipboard.write){
-    var blob=new Blob([html],{type:'text/html'});
-    var textBlob=new Blob([html.replace(/<[^>]*>/g,'')],{type:'text/plain'});
-    var item=new ClipboardItem({'text/html':blob,'text/plain':textBlob});
-    return navigator.clipboard.write([item]);
-  }
-  // Fallback: use execCommand with a hidden div
-  return new Promise(function(resolve,reject){
-    var div=document.createElement('div');
-    div.innerHTML=html;
-    div.style.cssText='position:fixed;left:-9999px;opacity:0';
-    document.body.appendChild(div);
-    var range=document.createRange();
-    range.selectNodeContents(div);
-    var sel=window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-    try{document.execCommand('copy');resolve();}catch(e){reject(e);}
-    finally{sel.removeAllRanges();div.remove();}
-  });
+  // Try to copy first, then open mailto
+  doSelectAndCopy();
+  setTimeout(function(){
+    window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj);
+  },400);
 }
 
 function showEmailStatus(msg,type){
