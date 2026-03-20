@@ -2165,13 +2165,13 @@ function sendPendingEmail(){
 
   // Build HTML email body
   var h='';
-  // KPI boxes (table layout for Outlook compatibility)
-  h+='<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px"><tr>';
-  h+=emailKpi(overdue.length,'Overdue','#E21B1B','#FFEBEE');
-  h+=emailKpi(dueSoon.length,'Due Soon','#E8A317','#FFF8E1');
-  h+=emailKpi(upcoming.length,'Upcoming','#2E7D32','#E8F5E9');
-  h+=emailKpi(noFollowup.length,'No Follow-up','#1565C0','#E3F2FD');
-  h+='</tr></table>';
+  // KPI summary line — plain text, no background colors
+  h+='<p style="font-size:13px;color:#000000;margin:0 0 16px 0">';
+  h+='<b>Overdue: '+overdue.length+'</b> &nbsp; | &nbsp; ';
+  h+='<b>Due Soon: '+dueSoon.length+'</b> &nbsp; | &nbsp; ';
+  h+='<b>Upcoming: '+upcoming.length+'</b> &nbsp; | &nbsp; ';
+  h+='<b>No Follow-up: '+noFollowup.length+'</b>';
+  h+='</p>';
 
   // Build table for each section
   if(overdue.length) h+=emailSection('Overdue Actions','#E21B1B',overdue);
@@ -2182,18 +2182,13 @@ function sendPendingEmail(){
   showEmailModal(subject,h,accountName,today,actions.length);
 }
 
-function emailKpi(val,label,color,bg){
-  return '<td width="25%" style="padding:0 6px"><table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="background-color:'+bg+';padding:14px 10px;text-align:center;border-top:3px solid '+color+'">'+
-    '<div style="font-size:28px;font-weight:700;color:'+color+';font-family:Courier New,monospace">'+val+'</div>'+
-    '<div style="font-size:10px;color:#777777;text-transform:uppercase;letter-spacing:1px;margin-top:4px">'+label+'</div>'+
-    '</td></tr></table></td>';
-}
 
 function emailSection(title,color,rows){
-  var h='<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px"><tr><td>';
-  h+='<p style="font-size:14px;font-weight:700;color:'+color+';margin:0 0 8px 0;padding-bottom:6px;border-bottom:2px solid '+color+'">'+title+' ('+rows.length+')</p>';
-  h+='<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;font-size:12px;font-family:Arial,Helvetica,sans-serif">';
-  var thS='padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;background-color:#1A1A1A;color:#ffffff;font-weight:700';
+  var h='<table cellpadding="0" cellspacing="0" border="1" bordercolor="#cccccc" width="100%" style="margin-bottom:20px;border-collapse:collapse;font-size:12px;font-family:Arial,Helvetica,sans-serif">';
+  // Section title row
+  h+='<tr><td colspan="8" style="padding:10px 12px;font-size:14px;font-weight:700;color:'+color+';border-bottom:3px solid '+color+'">'+title+' ('+rows.length+')</td></tr>';
+  // Header row — white bg, black bold text, bottom border
+  var thS='padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#000000;border-bottom:2px solid #000000';
   h+='<tr>';
   h+='<th style="'+thS+'">Deadline</th>';
   h+='<th style="'+thS+'">Days</th>';
@@ -2204,54 +2199,45 @@ function emailSection(title,color,rows){
   h+='<th style="'+thS+'">Action</th>';
   h+='<th style="'+thS+';text-align:center">Follow-up</th>';
   h+='</tr>';
-  var tdS='padding:7px 10px;border-bottom:1px solid #eeeeee;';
+  var tdS='padding:7px 10px;border-bottom:1px solid #cccccc;color:#000000;';
   rows.forEach(function(r,i){
-    var bg=i%2===0?'#ffffff':'#F9F9F9';
     var daysText=r.daysLeft<0?Math.abs(r.daysLeft)+'d ago':r.daysLeft===0?'Today':r.daysLeft+'d';
     var ns=normStatus(r.status);
-    var sc=ns.toLowerCase();
-    var sColor=sc==='active'?'#2E7D32':sc==='potential'?'#1565C0':sc==='hold'?'#E8A317':sc==='no go'?'#E21B1B':'#777777';
-    var sBg=sc==='active'?'#E8F5E9':sc==='potential'?'#E3F2FD':sc==='hold'?'#FFF8E1':sc==='no go'?'#FFEBEE':'#F4F4F4';
-    var fuColor=r.hasFollowup?'#2E7D32':'#E21B1B';
     var fuText=r.hasFollowup?'Yes':'NO VISIT';
     h+='<tr>';
-    h+='<td style="'+tdS+'background-color:'+bg+';font-family:Courier New,monospace;font-size:11px;white-space:nowrap">'+fmtDate(r.actionDate)+'</td>';
-    h+='<td style="'+tdS+'background-color:'+bg+';font-family:Courier New,monospace;font-weight:700;font-size:12px">'+daysText+'</td>';
-    h+='<td style="'+tdS+'background-color:'+bg+'"><span style="background-color:'+sBg+';color:'+sColor+';font-size:10px;font-weight:700;padding:2px 8px">'+escHtml(ns||'—')+'</span></td>';
-    h+='<td style="'+tdS+'background-color:'+bg+'">'+escHtml(r.vendor)+'</td>';
-    h+='<td style="'+tdS+'background-color:'+bg+'">'+escHtml(r.site)+'</td>';
-    h+='<td style="'+tdS+'background-color:'+bg+'">'+escHtml(r.salesperson)+'</td>';
-    h+='<td style="'+tdS+'background-color:'+bg+'">'+escHtml(r.nextAction||'—')+'</td>';
-    h+='<td style="'+tdS+'background-color:'+bg+';text-align:center;font-weight:700;font-size:11px;color:'+fuColor+'">'+fuText+'</td>';
+    h+='<td style="'+tdS+'font-family:Courier New,monospace;font-size:11px;white-space:nowrap">'+fmtDate(r.actionDate)+'</td>';
+    h+='<td style="'+tdS+'font-family:Courier New,monospace;font-weight:700;font-size:12px">'+daysText+'</td>';
+    h+='<td style="'+tdS+'font-weight:700">'+escHtml(ns||'—')+'</td>';
+    h+='<td style="'+tdS+'">'+escHtml(r.vendor)+'</td>';
+    h+='<td style="'+tdS+'">'+escHtml(r.site)+'</td>';
+    h+='<td style="'+tdS+'">'+escHtml(r.salesperson)+'</td>';
+    h+='<td style="'+tdS+'">'+escHtml(r.nextAction||'—')+'</td>';
+    h+='<td style="'+tdS+'text-align:center;font-weight:700">'+(r.hasFollowup?fuText:'<b>'+fuText+'</b>')+'</td>';
     h+='</tr>';
   });
-  h+='</table></td></tr></table>';
+  h+='</table>';
   return h;
 }
 
 function showEmailModal(subject,htmlBody,accountName,today,totalCount){
-  // Full HTML email template — Outlook-safe (tables, no flex, no rgba)
-  var fullHtml='<table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:800px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;color:#1A1A1A">';
+  // Full HTML email template — all text black, white backgrounds, borders to delimit
+  var fullHtml='<table cellpadding="0" cellspacing="0" border="1" bordercolor="#cccccc" width="100%" style="max-width:800px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#000000">';
   // Header
-  fullHtml+='<tr><td style="background-color:#1A1A1A;padding:20px 28px;text-align:center">';
-  fullHtml+='<div style="color:#E21B1B;font-family:Courier New,monospace;font-weight:700;font-size:22px;letter-spacing:3px">SML GROUP</div>';
-  fullHtml+='<div style="color:#999999;font-size:11px;margin-top:4px;letter-spacing:1px">CRM PENDING ACTIONS REPORT</div>';
+  fullHtml+='<tr><td style="padding:16px 24px;border-bottom:3px solid #E21B1B">';
+  fullHtml+='<b style="font-size:20px;color:#E21B1B">SML GROUP</b>';
+  fullHtml+='<span style="font-size:12px;color:#000000"> &mdash; CRM Pending Actions Report</span>';
   fullHtml+='</td></tr>';
   // Account + date bar
-  fullHtml+='<tr><td style="background-color:#ffffff;padding:18px 28px 0 28px;border-left:1px solid #E4E4E4;border-right:1px solid #E4E4E4">';
-  fullHtml+='<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>';
-  fullHtml+='<td style="font-size:16px;font-weight:700;color:#E21B1B">'+escHtml(accountName)+'</td>';
-  fullHtml+='<td style="font-size:12px;color:#777777;font-family:Courier New,monospace;text-align:right">'+escHtml(today)+' &middot; '+totalCount+' actions</td>';
-  fullHtml+='</tr></table>';
+  fullHtml+='<tr><td style="padding:12px 24px;border-bottom:1px solid #cccccc">';
+  fullHtml+='<b style="font-size:14px">'+escHtml(accountName)+'</b>';
+  fullHtml+=' &nbsp; | &nbsp; '+escHtml(today)+' &nbsp; | &nbsp; '+totalCount+' actions';
   fullHtml+='</td></tr>';
-  // Body
-  fullHtml+='<tr><td style="background-color:#ffffff;padding:18px 28px 24px 28px;border-left:1px solid #E4E4E4;border-right:1px solid #E4E4E4">';
+  // KPI row
+  fullHtml+='<tr><td style="padding:16px 24px;border-bottom:1px solid #cccccc">';
   fullHtml+=htmlBody;
   fullHtml+='</td></tr>';
   // Footer
-  fullHtml+='<tr><td style="background-color:#F4F4F4;padding:14px 28px;text-align:center;border:1px solid #E4E4E4;border-top:none">';
-  fullHtml+='<span style="font-size:10px;color:#999999;font-family:Courier New,monospace">Generated by SML CRM Tool</span>';
-  fullHtml+='</td></tr>';
+  fullHtml+='<tr><td style="padding:10px 24px;font-size:10px;color:#666666">Generated by SML CRM Tool</td></tr>';
   fullHtml+='</table>';
 
   var overlay=document.createElement('div');
