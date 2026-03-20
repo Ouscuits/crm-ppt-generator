@@ -345,8 +345,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
         <label>Filters:</label>
         <select class="sel" id="paFilterSalesperson" onchange="renderPendingActions()"><option value="all">All Salespersons</option></select>
         <select class="sel" id="paFilterCountry" onchange="renderPendingActions()"><option value="all">All Countries</option></select>
+        <select class="sel" id="paFilterStatus" onchange="renderPendingActions()"><option value="all">All Visit Status</option></select>
         <select class="sel" id="paFilterUrgency" onchange="renderPendingActions()">
-          <option value="all">All Status</option>
+          <option value="all">All Urgency</option>
           <option value="overdue">Overdue</option>
           <option value="due-soon">Due Soon (7 days)</option>
           <option value="upcoming">Upcoming</option>
@@ -360,7 +361,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
     </div>
     <div id="actionsEmpty" class="pa-empty" style="display:none">
       <p style="font-size:28px;opacity:.2;margin-bottom:8px">&#9745;</p>
-      <p>No pending actions found. Upload a CRM Excel file with "Next Action" and "Action Date" columns.</p>
+      <p>No pending actions found. Upload a CRM Excel file with an "Action Date" column.</p>
     </div>
   </div>
   <div class="msg" id="msg"></div>
@@ -1958,10 +1959,10 @@ function processPendingActions(records){
     if(!latestVisit[key]||r.date>latestVisit[key]) latestVisit[key]=r.date;
   });
 
-  // Filter records that have nextAction + actionDate
+  // Filter records that have actionDate set
   paData=[];
   normalized.forEach(function(r){
-    if(!r.nextAction||!r.nextAction.trim()||!r.actionDate)return;
+    if(!r.actionDate)return;
     var ad=new Date(r.actionDate);ad.setHours(0,0,0,0);
     var diff=Math.ceil((ad-today)/(1000*60*60*24));
     var urgency='upcoming';
@@ -2010,10 +2011,11 @@ function processPendingActions(records){
 }
 
 function buildPaFilters(){
-  var salespersons={},countries={};
+  var salespersons={},countries={},statuses={};
   paData.forEach(function(r){
     if(r.salesperson&&r.salesperson!=='—') salespersons[r.salesperson]=1;
     if(r.site&&r.site!=='—') countries[r.site]=1;
+    if(r.status&&r.status!=='—'&&r.status.trim()) statuses[normStatus(r.status)]=1;
   });
   var spSel=document.getElementById('paFilterSalesperson');
   spSel.innerHTML='<option value="all">All Salespersons</option>';
@@ -2025,16 +2027,23 @@ function buildPaFilters(){
   Object.keys(countries).sort().forEach(function(c){
     var o=document.createElement('option');o.value=c;o.textContent=c;cSel.appendChild(o);
   });
+  var stSel=document.getElementById('paFilterStatus');
+  stSel.innerHTML='<option value="all">All Visit Status</option>';
+  Object.keys(statuses).sort().forEach(function(s){
+    var o=document.createElement('option');o.value=s;o.textContent=s;stSel.appendChild(o);
+  });
 }
 
 function renderPendingActions(){
   var sp=document.getElementById('paFilterSalesperson').value;
   var ct=document.getElementById('paFilterCountry').value;
+  var st=document.getElementById('paFilterStatus').value;
   var ur=document.getElementById('paFilterUrgency').value;
 
   paFiltered=paData.filter(function(r){
     if(sp!=='all'&&r.salesperson!==sp)return false;
     if(ct!=='all'&&r.site!==ct)return false;
+    if(st!=='all'&&normStatus(r.status)!==st)return false;
     if(ur!=='all'&&r.urgency!==ur)return false;
     return true;
   });
@@ -2056,17 +2065,20 @@ function renderPendingActions(){
 
   // Table
   var html='<table class="pa-table"><thead><tr>'+
-    '<th>Urgency</th><th>Deadline</th><th>Days</th><th>Vendor</th><th>Country</th><th>Brand</th>'+
+    '<th>Urgency</th><th>Deadline</th><th>Days</th><th>Status</th><th>Vendor</th><th>Country</th><th>Brand</th>'+
     '<th>Salesperson</th><th>Next Action</th><th>Follow-up</th>'+
     '</tr></thead><tbody>';
 
   if(paFiltered.length===0){
-    html+='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--mid)">No actions match the selected filters</td></tr>';
+    html+='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--mid)">No actions match the selected filters</td></tr>';
   } else {
     paFiltered.forEach(function(r){
       var rowClass=r.urgency==='overdue'?'pa-overdue':r.urgency==='due-soon'?'pa-due-soon':'';
       var urgLabel=r.urgency==='overdue'?'OVERDUE':r.urgency==='due-soon'?'DUE SOON':'UPCOMING';
       var daysText=r.daysLeft<0?Math.abs(r.daysLeft)+'d ago':r.daysLeft===0?'Today':r.daysLeft+'d';
+      var ns=normStatus(r.status);
+      var sc=ns.toLowerCase();
+      var sCls=sc==='active'?'s-a':sc==='potential'?'s-p':sc==='hold'?'s-h':(sc==='no go'?'s-n':'');
       var followupHtml=r.hasFollowup?
         '<span style="color:#2E7D32;font-weight:700;font-size:11px">Yes</span>':
         '<span class="pa-no-followup">NO VISIT</span>';
@@ -2074,6 +2086,7 @@ function renderPendingActions(){
         '<td><span class="pa-urgency '+r.urgency+'">'+urgLabel+'</span></td>'+
         '<td style="font-family:\'Space Mono\',monospace;font-size:11px;white-space:nowrap">'+fmtDate(r.actionDate)+'</td>'+
         '<td style="font-family:\'Space Mono\',monospace;font-size:12px;font-weight:700;text-align:center">'+daysText+'</td>'+
+        '<td>'+(sCls?'<span class="s-badge '+sCls+'">'+escHtml(ns)+'</span>':escHtml(ns||'—'))+'</td>'+
         '<td>'+escHtml(r.vendor)+'</td>'+
         '<td>'+escHtml(r.site)+'</td>'+
         '<td>'+escHtml(r.brand)+'</td>'+
@@ -2090,6 +2103,7 @@ function renderPendingActions(){
 function clearPaFilter(){
   document.getElementById('paFilterSalesperson').value='all';
   document.getElementById('paFilterCountry').value='all';
+  document.getElementById('paFilterStatus').value='all';
   document.getElementById('paFilterUrgency').value='all';
   renderPendingActions();
 }
