@@ -53,6 +53,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 .pa-no-followup{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFEBEE;color:#B71C1C;margin-left:6px}
 .pa-email-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:#E65100;color:#fff}
 .pa-email-btn:hover{background:#BF360C;transform:translateY(-1px);box-shadow:0 4px 12px rgba(230,81,0,.3)}
+/* Compact grouped layout */
+.pa-context-bar{background:#fff;border-radius:12px;padding:12px 20px;margin-bottom:14px;display:flex;align-items:center;gap:20px;border:1px solid var(--light);flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.pa-ctx-item{font-size:14px;font-weight:600;color:var(--dark)}
+.pa-ctx-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mid);margin-right:6px}
+.pa-brand-group{margin-bottom:16px}
+.pa-brand-header{font-size:16px;font-weight:700;color:var(--red);padding:10px 16px;background:#fff;border:1px solid var(--light);border-bottom:3px solid var(--red);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:10px}
+.pa-brand-count{font-size:11px;font-weight:700;background:var(--red);color:#fff;padding:2px 8px;border-radius:10px;font-family:'Space Mono',monospace}
+.pa-brand-group .pa-table{border-radius:0 0 12px 12px;border-top:none}
+.pa-table-compact th:nth-child(5),.pa-table-compact td:nth-child(5){min-width:300px}
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
 .kpi-card{background:#fff;border-radius:12px;padding:20px;border:1px solid var(--light);text-align:center;border-top:3px solid var(--red)}
 .kpi-val{font-size:28px;font-weight:700;font-family:'Space Mono',monospace;color:var(--dark)}
@@ -2050,15 +2059,63 @@ function renderPendingActions(){
     '<div class="pa-stat upcoming"><div class="pa-stat-val">'+upcoming+'</div><div class="pa-stat-lbl">Upcoming</div></div>'+
     '<div class="pa-stat total"><div class="pa-stat-val">'+noFollowup+'</div><div class="pa-stat-lbl">No Follow-up</div></div>';
 
-  // Table
-  var html='<table class="pa-table"><thead><tr>'+
-    '<th>Urgency</th><th>Deadline</th><th>Days</th><th>Status</th><th>Vendor</th><th>Country</th><th>Brand</th>'+
-    '<th>Salesperson</th><th>Next Action</th><th>Follow-up</th>'+
-    '</tr></thead><tbody>';
+  // Detect if salesperson filter is active → use compact grouped layout
+  var isFiltered=sp!=='all';
 
+  var html='';
   if(paFiltered.length===0){
-    html+='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--mid)">No actions match the selected filters</td></tr>';
+    html='<div style="text-align:center;padding:30px;color:var(--mid);background:#fff;border-radius:12px;border:1px solid var(--light)">No actions match the selected filters</div>';
+  } else if(isFiltered){
+    // --- COMPACT GROUPED LAYOUT ---
+    // Context header with filtered person info
+    var sampleRow=paFiltered[0];
+    html+='<div class="pa-context-bar">';
+    html+='<span class="pa-ctx-item"><span class="pa-ctx-lbl">Salesperson</span> '+escHtml(sampleRow.salesperson)+'</span>';
+    if(ct!=='all') html+='<span class="pa-ctx-item"><span class="pa-ctx-lbl">Country</span> '+escHtml(ct)+'</span>';
+    if(st!=='all') html+='<span class="pa-ctx-item"><span class="pa-ctx-lbl">Status</span> '+escHtml(st)+'</span>';
+    html+='</div>';
+
+    // Group by brand
+    var brandGroups={};
+    paFiltered.forEach(function(r){
+      var b=r.brand||'Other';
+      if(!brandGroups[b])brandGroups[b]=[];
+      brandGroups[b].push(r);
+    });
+    var brands=Object.keys(brandGroups).sort();
+
+    brands.forEach(function(brand){
+      var rows=brandGroups[brand];
+      html+='<div class="pa-brand-group">';
+      html+='<div class="pa-brand-header">'+escHtml(brand)+'<span class="pa-brand-count">'+rows.length+'</span></div>';
+      html+='<table class="pa-table pa-table-compact"><thead><tr>'+
+        '<th>Urgency</th><th>Deadline</th><th>Days</th><th>Vendor</th>'+
+        '<th>Next Action</th><th>Follow-up</th>'+
+        '</tr></thead><tbody>';
+      rows.forEach(function(r){
+        var rowClass=r.urgency==='overdue'?'pa-overdue':r.urgency==='due-soon'?'pa-due-soon':'';
+        var urgLabel=r.urgency==='overdue'?'OVERDUE':r.urgency==='due-soon'?'DUE SOON':'UPCOMING';
+        var daysText=r.daysLeft<0?Math.abs(r.daysLeft)+'d ago':r.daysLeft===0?'Today':r.daysLeft+'d';
+        var followupHtml=r.hasFollowup?
+          '<span style="color:#2E7D32;font-weight:700;font-size:11px">Yes</span>':
+          '<span class="pa-no-followup">NO VISIT</span>';
+        html+='<tr class="'+rowClass+'">'+
+          '<td><span class="pa-urgency '+r.urgency+'">'+urgLabel+'</span></td>'+
+          '<td style="font-family:\'Space Mono\',monospace;font-size:11px;white-space:nowrap">'+fmtDate(r.actionDate)+'</td>'+
+          '<td style="font-family:\'Space Mono\',monospace;font-size:12px;font-weight:700;text-align:center">'+daysText+'</td>'+
+          '<td>'+escHtml(r.vendor)+'</td>'+
+          '<td>'+escHtml(r.nextAction||'—')+'</td>'+
+          '<td style="text-align:center">'+followupHtml+'</td>'+
+          '</tr>';
+      });
+      html+='</tbody></table></div>';
+    });
   } else {
+    // --- FULL TABLE (no salesperson filter) ---
+    html+='<table class="pa-table"><thead><tr>'+
+      '<th>Urgency</th><th>Deadline</th><th>Days</th><th>Status</th><th>Vendor</th><th>Country</th><th>Brand</th>'+
+      '<th>Salesperson</th><th>Next Action</th><th>Follow-up</th>'+
+      '</tr></thead><tbody>';
     paFiltered.forEach(function(r){
       var rowClass=r.urgency==='overdue'?'pa-overdue':r.urgency==='due-soon'?'pa-due-soon':'';
       var urgLabel=r.urgency==='overdue'?'OVERDUE':r.urgency==='due-soon'?'DUE SOON':'UPCOMING';
@@ -2078,12 +2135,12 @@ function renderPendingActions(){
         '<td>'+escHtml(r.site)+'</td>'+
         '<td>'+escHtml(r.brand)+'</td>'+
         '<td>'+escHtml(r.salesperson)+'</td>'+
-        '<td style="max-width:250px">'+escHtml(r.nextAction)+'</td>'+
+        '<td style="max-width:250px">'+escHtml(r.nextAction||'—')+'</td>'+
         '<td style="text-align:center">'+followupHtml+'</td>'+
         '</tr>';
     });
+    html+='</tbody></table>';
   }
-  html+='</tbody></table>';
   document.getElementById('paTableWrap').innerHTML=html;
 }
 
