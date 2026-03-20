@@ -20,7 +20,16 @@ https://ouscuits.github.io/crm-ppt-generator/
 - Generate PowerPoint reports per country/brand
 - Slides: Cover, Executive Summary, Competitor Landscape, Brand Vendors, Priority Actions, Strategic Analysis
 
-### 3. Sales Dashboard (Power BI data)
+### 3. Pending Actions
+- Tracks "Next Action" + "Action Date" from CRM Excel uploads
+- Urgency levels: Overdue (red), Due Soon within 7 days (amber), Upcoming (green)
+- Detects if vendor+country has had a follow-up visit after the action was recorded
+- Filters by salesperson, country, urgency
+- KPI cards: Overdue, Due Soon, Upcoming, No Follow-up counts
+- Email reminder: generates mailto or copy-to-clipboard with full pending actions report
+- Data persisted in Firestore (`crmData` subcollection) — loads from Firestore or in-memory fallback
+
+### 4. Sales Dashboard (Power BI data)
 - **Sales Overview**: by country, product type, RFID vs other products, monthly trend, top 15 customers
 - **Brand Analysis**: by brand, product type by brand, RFID by brand, brand mix, top customers
 - **Zara Breakdown**: ZARA main + sub-brands (Maag, Ecru, Vilet, Dub) with product/country/trend charts

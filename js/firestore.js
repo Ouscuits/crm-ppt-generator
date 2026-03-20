@@ -280,6 +280,19 @@ function fsGetLatestCrmData(accountId) {
     });
 }
 
+function fsGetAllCrmData(accountId) {
+  return fbDb.collection('accounts').doc(accountId).collection('crmData')
+    .orderBy('uploadedAt', 'desc').get()
+    .then(function(snap) {
+      var records = [];
+      snap.forEach(function(doc) {
+        var data = doc.data();
+        if (data.records) records = records.concat(data.records);
+      });
+      return records;
+    });
+}
+
 // --- Migration ---
 function fsMigrateHistoricalData(accountId) {
   return fetch('historical-data.json')
