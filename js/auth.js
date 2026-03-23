@@ -11,9 +11,6 @@ function showView(viewId) {
     var el = document.getElementById(id);
     if (el) el.style.display = (id === viewId) ? '' : 'none';
   });
-  if (viewId !== 'mainApp') {
-    document.body.classList.remove('logo-compact');
-  }
 }
 
 // --- Login ---
@@ -61,6 +58,10 @@ function selectAccount(accountId) {
       currentAccount = accountId;
       currentAccountData = doc.data();
       currentAccountData.id = accountId;
+      // Reset global state
+      allRows=[];filteredRows=[];paData=[];paFiltered=[];
+      dashData=[];dashFiltered=[];dashSelectedCompanies=[];dashSelectedMonths=[];
+      currentDashTab='overview';
       // Update main app bar
       document.getElementById('accountNameDisplay').textContent = currentAccountData.name;
       document.getElementById('appUserDisplay').textContent = currentUserData.name || currentUser.email;
@@ -76,8 +77,10 @@ function selectAccount(accountId) {
 function backToAccounts() {
   currentAccount = null;
   currentAccountData = null;
-  dashData = [];
-  dashFiltered = [];
+  // Reset all global state
+  allRows=[];filteredRows=[];paData=[];paFiltered=[];
+  dashData=[];dashFiltered=[];dashSelectedCompanies=[];dashSelectedMonths=[];
+  currentDashTab='overview';
   Object.keys(dashCharts).forEach(function(k) {
     if (dashCharts[k]) dashCharts[k].destroy();
   });
@@ -170,12 +173,7 @@ function showLoginError(msg) {
   }
 }
 
-// --- Utility ---
-function escHtml(s) {
-  var d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
+// escHtml, showStatus now in utils.js
 
 // ========================================
 // ADMIN PANEL
@@ -282,11 +280,11 @@ function createUserSubmit() {
   var accounts = getSelectedUserAccounts();
 
   if (!name || !email || !password) {
-    showAdminUserMsg('All fields required.', 'err');
+    showStatus('adminUserMsg','All fields required.', 'err');
     return;
   }
   if (password.length < 6) {
-    showAdminUserMsg('Password must be at least 6 characters.', 'err');
+    showStatus('adminUserMsg','Password must be at least 6 characters.', 'err');
     return;
   }
 
@@ -295,13 +293,13 @@ function createUserSubmit() {
 
   fsCreateUser(email, name, password, role, accounts)
     .then(function() {
-      showAdminUserMsg('User created successfully.', 'ok');
+      showStatus('adminUserMsg','User created successfully.', 'ok');
       toggleUserForm(false);
       adminEditingUser = null;
       loadAdminUsers();
     })
     .catch(function(err) {
-      showAdminUserMsg('Error: ' + err.message, 'err');
+      showStatus('adminUserMsg','Error: ' + err.message, 'err');
     })
     .finally(function() {
       document.getElementById('userFormBtn').disabled = false;
@@ -332,7 +330,7 @@ function updateUserSubmit() {
   var newAccounts = getSelectedUserAccounts();
 
   if (!name) {
-    showAdminUserMsg('Name is required.', 'err');
+    showStatus('adminUserMsg','Name is required.', 'err');
     return;
   }
 
@@ -364,14 +362,14 @@ function updateUserSubmit() {
 
   Promise.all(promises)
     .then(function() {
-      showAdminUserMsg('User updated.', 'ok');
+      showStatus('adminUserMsg','User updated.', 'ok');
       adminEditingUser = null;
       document.getElementById('userEmail').disabled = false;
       toggleUserForm(false);
       loadAdminUsers();
     })
     .catch(function(err) {
-      showAdminUserMsg('Error: ' + err.message, 'err');
+      showStatus('adminUserMsg','Error: ' + err.message, 'err');
     })
     .finally(function() {
       document.getElementById('userFormBtn').disabled = false;
@@ -387,15 +385,15 @@ function cancelUserForm() {
 
 function confirmDeleteUser(uid, name) {
   if (uid === currentUser.uid) {
-    showAdminUserMsg('Cannot delete your own account.', 'err');
+    showStatus('adminUserMsg','Cannot delete your own account.', 'err');
     return;
   }
   if (confirm('Delete user "' + name + '"? This cannot be undone.')) {
     fsDeleteUser(uid).then(function() {
-      showAdminUserMsg('User deleted.', 'ok');
+      showStatus('adminUserMsg','User deleted.', 'ok');
       loadAdminUsers();
     }).catch(function(err) {
-      showAdminUserMsg('Error: ' + err.message, 'err');
+      showStatus('adminUserMsg','Error: ' + err.message, 'err');
     });
   }
 }
@@ -403,19 +401,14 @@ function confirmDeleteUser(uid, name) {
 function resetUserPwd(email) {
   if (confirm('Send password reset email to ' + email + '?')) {
     fsResetPassword(email).then(function() {
-      showAdminUserMsg('Password reset email sent to ' + email, 'ok');
+      showStatus('adminUserMsg','Password reset email sent to ' + email, 'ok');
     }).catch(function(err) {
-      showAdminUserMsg('Error: ' + err.message, 'err');
+      showStatus('adminUserMsg','Error: ' + err.message, 'err');
     });
   }
 }
 
-function showAdminUserMsg(txt, type) {
-  var el = document.getElementById('adminUserMsg');
-  el.textContent = txt;
-  el.className = 'admin-msg show ' + type;
-  setTimeout(function() { el.className = 'admin-msg'; }, 5000);
-}
+// showAdminUserMsg removed — uses showStatus from utils.js
 
 // --- ACCOUNTS TAB ---
 function loadAdminAccounts() {
@@ -469,7 +462,7 @@ function createAccountSubmit() {
   var email = document.getElementById('accountEmail').value.trim();
 
   if (!name) {
-    showAdminAcctMsg('Account name is required.', 'err');
+    showStatus('adminAcctMsg','Account name is required.', 'err');
     return;
   }
 
@@ -478,13 +471,13 @@ function createAccountSubmit() {
 
   fsCreateAccount(name, responsible, email)
     .then(function() {
-      showAdminAcctMsg('Account created.', 'ok');
+      showStatus('adminAcctMsg','Account created.', 'ok');
       toggleAccountForm(false);
       adminEditingAccount = null;
       loadAdminAccounts();
     })
     .catch(function(err) {
-      showAdminAcctMsg('Error: ' + err.message, 'err');
+      showStatus('adminAcctMsg','Error: ' + err.message, 'err');
     })
     .finally(function() {
       document.getElementById('accountFormBtn').disabled = false;
@@ -512,20 +505,20 @@ function updateAccountSubmit() {
   var email = document.getElementById('accountEmail').value.trim();
 
   if (!name) {
-    showAdminAcctMsg('Account name is required.', 'err');
+    showStatus('adminAcctMsg','Account name is required.', 'err');
     return;
   }
 
   document.getElementById('accountFormBtn').disabled = true;
   fsUpdateAccount(adminEditingAccount, { name: name, responsible: responsible, responsibleEmail: email })
     .then(function() {
-      showAdminAcctMsg('Account updated.', 'ok');
+      showStatus('adminAcctMsg','Account updated.', 'ok');
       adminEditingAccount = null;
       toggleAccountForm(false);
       loadAdminAccounts();
     })
     .catch(function(err) {
-      showAdminAcctMsg('Error: ' + err.message, 'err');
+      showStatus('adminAcctMsg','Error: ' + err.message, 'err');
     })
     .finally(function() {
       document.getElementById('accountFormBtn').disabled = false;
@@ -540,20 +533,15 @@ function cancelAccountForm() {
 function confirmDeleteAccount(accountId, name) {
   if (confirm('Delete account "' + name + '" and ALL its data? This cannot be undone.')) {
     fsDeleteAccount(accountId).then(function() {
-      showAdminAcctMsg('Account deleted.', 'ok');
+      showStatus('adminAcctMsg','Account deleted.', 'ok');
       loadAdminAccounts();
     }).catch(function(err) {
-      showAdminAcctMsg('Error: ' + err.message, 'err');
+      showStatus('adminAcctMsg','Error: ' + err.message, 'err');
     });
   }
 }
 
-function showAdminAcctMsg(txt, type) {
-  var el = document.getElementById('adminAcctMsg');
-  el.textContent = txt;
-  el.className = 'admin-msg show ' + type;
-  setTimeout(function() { el.className = 'admin-msg'; }, 5000);
-}
+// showAdminAcctMsg removed — uses showStatus from utils.js
 
 // --- DATA TAB ---
 function initAdminDataTab() {
@@ -605,19 +593,19 @@ function loadAdminDataStatus() {
 function handleAdminDataUpload(files) {
   var accountId = document.getElementById('adminDataAccount').value;
   if (!accountId) {
-    showAdminDataMsg('Select an account first.', 'err');
+    showStatus('adminDataMsg','Select an account first.', 'err');
     return;
   }
   if (!files || !files.length) return;
   if (!xlsxReady) {
-    showAdminDataMsg('XLSX library not ready yet.', 'err');
+    showStatus('adminDataMsg','XLSX library not ready yet.', 'err');
     return;
   }
 
   var allParsed = [];
   var processed = 0;
   var total = files.length;
-  showAdminDataMsg('Processing ' + total + ' file(s)...', 'ok');
+  showStatus('adminDataMsg','Processing ' + total + ' file(s)...', 'ok');
 
   for (var f = 0; f < files.length; f++) {
     (function(file) {
@@ -630,14 +618,14 @@ function handleAdminDataUpload(files) {
           var parsed = parseExcelRows(raw);
           allParsed = allParsed.concat(parsed);
         } catch(ex) {
-          showAdminDataMsg('Error in ' + file.name + ': ' + ex.message, 'err');
+          showStatus('adminDataMsg','Error in ' + file.name + ': ' + ex.message, 'err');
         }
         processed++;
         if (processed === total) {
-          showAdminDataMsg('Uploading ' + allParsed.length + ' records to Firestore...', 'ok');
+          showStatus('adminDataMsg','Uploading ' + allParsed.length + ' records to Firestore...', 'ok');
           fsUploadSalesData(accountId, allParsed)
             .then(function() {
-              showAdminDataMsg('Uploaded ' + allParsed.length + ' records from ' + total + ' file(s).', 'ok');
+              showStatus('adminDataMsg','Uploaded ' + allParsed.length + ' records from ' + total + ' file(s).', 'ok');
               loadAdminDataStatus();
               // Refresh dashboard if this is the current account
               if (currentAccount === accountId && currentMode === 'dash') {
@@ -645,7 +633,7 @@ function handleAdminDataUpload(files) {
               }
             })
             .catch(function(err) {
-              showAdminDataMsg('Upload error: ' + err.message, 'err');
+              showStatus('adminDataMsg','Upload error: ' + err.message, 'err');
             });
         }
       };
@@ -657,7 +645,7 @@ function handleAdminDataUpload(files) {
 function clearAccountYear() {
   var accountId = document.getElementById('adminDataAccount').value;
   if (!accountId) {
-    showAdminDataMsg('Select an account first.', 'err');
+    showStatus('adminDataMsg','Select an account first.', 'err');
     return;
   }
   var year = prompt('Enter year to clear (e.g., 2026), or leave empty to clear ALL data:');
@@ -667,18 +655,18 @@ function clearAccountYear() {
 
   fsClearSalesData(accountId, year || null)
     .then(function() {
-      showAdminDataMsg(year ? 'Year ' + year + ' data cleared.' : 'All data cleared.', 'ok');
+      showStatus('adminDataMsg',year ? 'Year ' + year + ' data cleared.' : 'All data cleared.', 'ok');
       loadAdminDataStatus();
     })
     .catch(function(err) {
-      showAdminDataMsg('Error: ' + err.message, 'err');
+      showStatus('adminDataMsg','Error: ' + err.message, 'err');
     });
 }
 
 function exportAccountData() {
   var accountId = document.getElementById('adminDataAccount').value;
   if (!accountId) {
-    showAdminDataMsg('Select an account first.', 'err');
+    showStatus('adminDataMsg','Select an account first.', 'err');
     return;
   }
   var acct = adminAllAccounts.find(function(a) { return a.id === accountId; });
@@ -688,24 +676,20 @@ function exportAccountData() {
 function migrateHistorical() {
   var accountId = document.getElementById('adminDataAccount').value;
   if (!accountId) {
-    showAdminDataMsg('Select an account first.', 'err');
+    showStatus('adminDataMsg','Select an account first.', 'err');
     return;
   }
   if (!confirm('This will upload historical-data.json to the selected account.\nExisting data for the same months will be REPLACED.\nContinue?')) return;
 
-  showAdminDataMsg('Loading and uploading historical data...', 'ok');
+  showStatus('adminDataMsg','Loading and uploading historical data...', 'ok');
   fsMigrateHistoricalData(accountId)
     .then(function(count) {
-      showAdminDataMsg('Migrated ' + count.toLocaleString() + ' historical records.', 'ok');
+      showStatus('adminDataMsg','Migrated ' + count.toLocaleString() + ' historical records.', 'ok');
       loadAdminDataStatus();
     })
     .catch(function(err) {
-      showAdminDataMsg('Error: ' + err.message, 'err');
+      showStatus('adminDataMsg','Error: ' + err.message, 'err');
     });
 }
 
-function showAdminDataMsg(txt, type) {
-  var el = document.getElementById('adminDataMsg');
-  el.textContent = txt;
-  el.className = 'admin-msg show ' + type;
-}
+// showAdminDataMsg removed — uses showStatus from utils.js

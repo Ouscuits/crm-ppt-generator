@@ -66,17 +66,24 @@ https://ouscuits.github.io/crm-ppt-generator/
 ## File Structure
 ```
 crm-ppt-generator/
-├── index.html              — Main app (views: login, account selector, main app, admin)
+├── index.html              — Main app (HTML + CSS + CRM core logic ~180 lines JS)
 ├── js/
 │   ├── firebase-config.js  — Firebase project configuration
-│   ├── auth.js             — Authentication, navigation, admin panel UI
-│   └── firestore.js        — Firestore CRUD operations
+│   ├── utils.js            — Shared utilities (escHtml, showStatus, normStatus, fmtDate, etc.)
+│   ├── firestore.js        — Firestore CRUD operations
+│   ├── dashboard.js        — Sales Dashboard (4 tabs, 18+ charts, filters, KPIs)
+│   ├── pptx.js             — PPTX report generation (6 slides per country/brand)
+│   ├── pending-actions.js  — Pending Actions (urgency tracking, email reminders)
+│   └── auth.js             — Authentication, navigation, admin panel UI (loads last)
 ├── historical-data.json    — Legacy backup (2024-2025 data, migrated to Firestore)
 ├── sml-animation.mp4       — Animated SML logo
 ├── sml-primary.svg         — SML primary logo
 ├── sml-logo.jpg            — SML logo image
 └── .nojekyll               — GitHub Pages config
 ```
+
+### Script load order
+Firebase SDK → firebase-config → firestore → utils → dashboard → pptx → pending-actions → auth
 
 ## Tech Stack
 - Vanilla HTML/CSS/JavaScript (no frameworks)
