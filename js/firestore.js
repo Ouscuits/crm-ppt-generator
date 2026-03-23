@@ -259,24 +259,30 @@ function fsExportAccountData(accountId, accountName) {
 
 // --- CRM Data ---
 function fsUploadCrmData(accountId, records, uploaderUid) {
-  return fbDb.collection('accounts').doc(accountId).collection('crmData').add({
-    uploadedBy: uploaderUid,
-    uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    recordCount: records.length,
-    records: records
+  var crmRef = fbDb.collection('accounts').doc(accountId).collection('crmData');
+  // Clean up old auto-ID documents from previous uploads
+  return crmRef.get().then(function(snap) {
+    var batch = fbDb.batch();
+    snap.forEach(function(doc) {
+      if (doc.id !== 'latest') batch.delete(doc.ref);
+    });
+    return batch.commit();
+  }).then(function() {
+    // Use fixed doc ID 'latest' so each upload replaces the previous one
+    return crmRef.doc('latest').set({
+      uploadedBy: uploaderUid,
+      uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      recordCount: records.length,
+      records: records
+    });
   });
 }
 
 function fsGetLatestCrmData(accountId) {
-  return fbDb.collection('accounts').doc(accountId).collection('crmData')
-    .orderBy('uploadedAt', 'desc').limit(1).get()
-    .then(function(snap) {
-      var records = [];
-      snap.forEach(function(doc) {
-        var data = doc.data();
-        if (data.records) records = records.concat(data.records);
-      });
-      return records;
+  return fbDb.collection('accounts').doc(accountId).collection('crmData').doc('latest').get()
+    .then(function(doc) {
+      if (doc.exists && doc.data().records) return doc.data().records;
+      return [];
     });
 }
 
