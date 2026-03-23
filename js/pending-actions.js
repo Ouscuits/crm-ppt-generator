@@ -10,7 +10,7 @@ function loadPendingActions(){
 
   // Try Firestore first, fallback to in-memory allRows
   if(currentAccount){
-    fsGetAllCrmData(currentAccount).then(function(records){
+    fsGetLatestCrmData(currentAccount).then(function(records){
       if(records.length>0){
         processPendingActions(records);
       } else if(allRows.length>0){
