@@ -55,6 +55,12 @@ async function buildPptx(name,rows,groupByMode){
 
   var sc=statusCounts(rows),tv=totalVol(rows),vendors=uniqueVals(rows,'vendor');
 
+  // Coverage data from vendor DB
+  var coverage=null;
+  if(groupByMode==='country'&&typeof getVendorCoverage==='function'){
+    coverage=getVendorCoverage(name);
+  }
+
   var bySales={};
   rows.forEach(function(r){var sp=r.salesperson||'Unknown';if(!bySales[sp])bySales[sp]={A:0,P:0,H:0,N:0};var s=(r.status||'').toLowerCase();if(s==='active')bySales[sp].A++;else if(s==='potential')bySales[sp].P++;else if(s==='hold')bySales[sp].H++;else if(s==='no go'||s==='nogo')bySales[sp].N++;});
 
@@ -89,11 +95,15 @@ async function buildPptx(name,rows,groupByMode){
   var s2=addBase(false);
   s2.addText(name+' Executive Summary',{x:1.3,y:0.26,w:12,h:0.40,fontSize:22,bold:true,color:C.red,fontFace:'DM Sans'});
   s2.addShape(pptx.ShapeType.line,{x:0.35,y:0.90,w:12.63,h:0,line:{color:C.lightGray,width:1}});
-  [{v:rows.length,l:'Interactions'},{v:vendors.length,l:'Vendors'},{v:rows.length,l:'Nominations'},{v:fmtVol(tv),l:'Pipeline (pcs)'}].forEach(function(k,i){
-    var x=0.4+i*2.1;
-    s2.addShape(pptx.ShapeType.rect,{x:x,y:0.85,w:1.95,h:1.1,fill:{color:C.gray},line:{color:C.lightGray,width:1}});
-    s2.addText(k.v.toString(),{x:x,y:0.9,w:1.95,h:0.58,fontSize:26,bold:true,color:C.dark,fontFace:'Space Mono',align:'center'});
-    s2.addText(k.l,{x:x,y:1.52,w:1.95,h:0.35,fontSize:9,color:C.mid,fontFace:'DM Sans',align:'center'});
+  var kpis=[{v:rows.length,l:'Interactions'},{v:vendors.length,l:'Vendors Contacted'},{v:fmtVol(tv),l:'Pipeline (pcs)'}];
+  if(coverage){kpis.push({v:coverage.contacted+'/'+coverage.total,l:'Coverage ('+coverage.pct+'%)'});}
+  else{kpis.push({v:rows.length,l:'Nominations'});}
+  var kpiW=kpis.length<=4?2.1:1.7;
+  kpis.forEach(function(k,i){
+    var x=0.4+i*kpiW;
+    s2.addShape(pptx.ShapeType.rect,{x:x,y:0.85,w:kpiW-0.15,h:1.1,fill:{color:C.gray},line:{color:C.lightGray,width:1}});
+    s2.addText(k.v.toString(),{x:x,y:0.9,w:kpiW-0.15,h:0.58,fontSize:22,bold:true,color:C.dark,fontFace:'Space Mono',align:'center'});
+    s2.addText(k.l,{x:x,y:1.52,w:kpiW-0.15,h:0.35,fontSize:8,color:C.mid,fontFace:'DM Sans',align:'center'});
   });
   s2.addText('Status Breakdown',{x:0.4,y:2.1,w:8,h:0.3,fontSize:11,bold:true,color:C.dark,fontFace:'DM Sans'});
   [{l:'Active',v:sc.A},{l:'Potential',v:sc.P},{l:'Hold',v:sc.H},{l:'No Go',v:sc.N}].forEach(function(item,i){

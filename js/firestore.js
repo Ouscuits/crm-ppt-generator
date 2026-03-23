@@ -299,6 +299,23 @@ function fsGetAllCrmData(accountId) {
     });
 }
 
+// --- Vendor Database ---
+function fsUploadVendorDb(accountId, vendors) {
+  return fbDb.collection('accounts').doc(accountId).collection('crmData').doc('vendorDb').set({
+    vendors: vendors,
+    recordCount: vendors.length,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+function fsGetVendorDb(accountId) {
+  return fbDb.collection('accounts').doc(accountId).collection('crmData').doc('vendorDb').get()
+    .then(function(doc) {
+      if (doc.exists && doc.data().vendors) return doc.data().vendors;
+      return [];
+    });
+}
+
 // --- Migration ---
 function fsMigrateHistoricalData(accountId) {
   return fetch('historical-data.json')

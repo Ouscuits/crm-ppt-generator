@@ -60,6 +60,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
 .pa-brand-group{margin-bottom:16px}
 .pa-brand-header{font-size:16px;font-weight:700;color:var(--red);padding:10px 16px;background:#fff;border:1px solid var(--light);border-bottom:3px solid var(--red);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:10px}
 .pa-brand-count{font-size:11px;font-weight:700;background:var(--red);color:#fff;padding:2px 8px;border-radius:10px;font-family:'Space Mono',monospace}
+/* Coverage */
+.coverage-bar{height:6px;background:var(--light);border-radius:3px;margin:6px 0 4px;overflow:hidden}
+.coverage-fill{height:100%;background:var(--red);border-radius:3px;transition:width .3s}
+.coverage-text{font-size:10px;color:var(--mid);font-family:'Space Mono',monospace}
+.cov-card{background:#fff;border-radius:12px;padding:18px;border:1px solid var(--light);border-top:3px solid var(--red)}
+.cov-country{font-size:16px;font-weight:700;margin-bottom:8px}
+.cov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:14px}
+.cov-stat{display:flex;justify-content:space-between;font-size:12px;margin:3px 0}
+.cov-stat-val{font-weight:700;font-family:'Space Mono',monospace}
 .pa-brand-group .pa-table{border-radius:0 0 12px 12px;border-top:none}
 .pa-table-compact th:nth-child(5),.pa-table-compact td:nth-child(5){min-width:300px}
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
@@ -263,12 +272,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
     <button class="mode-btn active" id="modeCrm" onclick="setMode('crm')">CRM Report</button>
     <button class="mode-btn" id="modeDash" onclick="setMode('dash')">Sales Dashboard</button>
     <button class="mode-btn" id="modeActions" onclick="setMode('actions')">Pending Actions</button>
+    <button class="mode-btn" id="modeCoverage" onclick="setMode('coverage')" style="background:#6A1B9A">CRM Coverage</button>
   </div>
   <div id="crmSection">
-    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-      <h2>Upload your CRM Excel file</h2>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" style="flex:1;max-width:380px">
+        <h2>CRM Visits Excel</h2>
+        <p>Upload visit log</p>
+      </div>
+      <div class="upload-zone" id="vendorUploadZone" onclick="document.getElementById('vendorFileInput').click()" style="flex:1;max-width:380px">
+        <h2>Vendor Database</h2>
+        <p>Upload full client list (CSV/Excel)</p>
+        <small id="vendorDbStatus"></small>
+      </div>
     </div>
     <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+    <input type="file" id="vendorFileInput" accept=".xlsx,.xls,.csv" style="display:none">
   </div>
   <div id="dashSection" class="dash-hidden">
     <div id="dashLoading" style="text-align:center;padding:20px;font-family:'Space Mono',monospace;font-size:12px;color:var(--mid)">Loading dashboard data...</div>
@@ -358,6 +377,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--dark);m
     <div id="actionsEmpty" class="pa-empty" style="display:none">
       <p style="font-size:28px;opacity:.2;margin-bottom:8px">&#9745;</p>
       <p>No pending actions found. Upload a CRM Excel file with an "Action Date" column.</p>
+    </div>
+  </div>
+  <!-- CRM Coverage Section -->
+  <div id="coverageSection" class="dash-hidden">
+    <div id="coverageContent"></div>
+    <div id="coverageEmpty" class="pa-empty" style="display:none">
+      <p style="font-size:28px;opacity:.2;margin-bottom:8px">&#128202;</p>
+      <p>Upload both a CRM Visits Excel and a Vendor Database to see coverage analysis.</p>
     </div>
   </div>
   <div class="msg" id="msg"></div>
@@ -520,12 +547,81 @@ var chartReady=false;
 loadScript(['https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'],function(){chartReady=true;},function(){console.error('Chart.js failed to load');});
 
 var allRows=[],filteredRows=[],groupBy='country',selectedMonths=[],selectedYear='all',allMonths=[],allYears=[];
+var vendorDb=[];// vendor database: [{vendor_name, country}]
 
 var uz=document.getElementById('uploadZone');
 uz.addEventListener('dragover',function(e){e.preventDefault();uz.classList.add('over');});
 uz.addEventListener('dragleave',function(){uz.classList.remove('over');});
 uz.addEventListener('drop',function(e){e.preventDefault();uz.classList.remove('over');handleFile(e.dataTransfer.files[0]);});
 document.getElementById('fileInput').addEventListener('change',function(){handleFile(this.files[0]);this.value='';});
+
+// Vendor DB upload
+var vuz=document.getElementById('vendorUploadZone');
+vuz.addEventListener('dragover',function(e){e.preventDefault();vuz.classList.add('over');});
+vuz.addEventListener('dragleave',function(){vuz.classList.remove('over');});
+vuz.addEventListener('drop',function(e){e.preventDefault();vuz.classList.remove('over');handleVendorFile(e.dataTransfer.files[0]);});
+document.getElementById('vendorFileInput').addEventListener('change',function(){handleVendorFile(this.files[0]);this.value='';});
+
+function normalizeCountry(s){
+  if(!s)return '';
+  s=s.toString().trim().replace(/^"|"$/g,'');
+  if(!s)return '';
+  // Title case + merge variants
+  var lower=s.toLowerCase();
+  if(lower==='china'||lower==='china-vietnam-cambodia')return 'China';
+  return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase();
+}
+
+function handleVendorFile(file){
+  if(!file)return;
+  if(!xlsxReady){showMsg('XLSX not ready yet.','err');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var raw=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!raw.length){showMsg('No vendor data found.','err');return;}
+      vendorDb=[];
+      var seen={};
+      raw.forEach(function(r){
+        var name=cleanText(r['vendor_name']||r['Vendor Name']||r['Vendor']||r['vendor']||r['name']||'');
+        var country=normalizeCountry(r['country']||r['Country']||r['site']||r['Site']||'');
+        if(!name||!country)return;
+        var key=name.toLowerCase()+'|'+country.toLowerCase();
+        if(seen[key])return;// deduplicate
+        seen[key]=1;
+        vendorDb.push({vendor_name:name,country:country});
+      });
+      var countries={};vendorDb.forEach(function(v){countries[v.country]=(countries[v.country]||0)+1;});
+      var cList=Object.keys(countries).sort();
+      document.getElementById('vendorDbStatus').textContent=vendorDb.length+' vendors · '+cList.length+' countries';
+      showMsg('Vendor DB: '+vendorDb.length+' vendors loaded from '+cList.length+' countries','ok');
+      // Save to Firestore
+      if(currentAccount){
+        fsUploadVendorDb(currentAccount,vendorDb).catch(function(e){console.warn('Vendor DB save:',e);});
+      }
+      // Re-render cards if CRM data already loaded
+      if(allRows.length)renderCards();
+    }catch(ex){showMsg('Error: '+ex.message,'err');console.error(ex);}
+  };
+  reader.readAsBinaryString(file);
+}
+
+function getVendorCoverage(countryName){
+  // Returns {total, contacted, pct} for a country
+  var normalName=normalizeCountry(countryName);
+  var totalVendors=vendorDb.filter(function(v){return normalizeCountry(v.country)===normalName;});
+  if(!totalVendors.length)return null;
+  var contactedSet={};
+  filteredRows.forEach(function(r){
+    if(normalizeCountry(r.site)===normalName&&r.vendor){
+      contactedSet[r.vendor.toLowerCase()]=1;
+    }
+  });
+  var contacted=Object.keys(contactedSet).length;
+  return {total:totalVendors.length,contacted:contacted,pct:totalVendors.length?Math.round(contacted/totalVendors.length*100):0};
+}
 // showMsg now in utils.js
 
 function handleFile(file){
@@ -652,8 +748,23 @@ function buildCard(name,rows,gKey){
   var sc=statusCounts(rows),tv=totalVol(rows),vendors=uniqueVals(rows,'vendor');
   var chips=gKey==='site'?uniqueVals(rows,'brand'):uniqueVals(rows,'site');
   var period=getPeriodLabel(rows),safeId=name.replace(/[^a-zA-Z0-9]/g,'_');
+  // Coverage KPI (only when grouped by country and vendorDb loaded)
+  var covHtml='';
+  if(gKey==='site'&&vendorDb.length){
+    var cov=getVendorCoverage(name);
+    if(cov){
+      var covColor=cov.pct>=50?'var(--active)':cov.pct>=25?'var(--hold)':'var(--red)';
+      covHtml='<div style="margin-bottom:12px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
+          '<span style="font-size:11px;font-weight:600">Coverage</span>'+
+          '<span style="font-size:14px;font-weight:700;font-family:\'Space Mono\',monospace;color:'+covColor+'">'+cov.contacted+'/'+cov.total+' ('+cov.pct+'%)</span>'+
+        '</div>'+
+        '<div class="coverage-bar"><div class="coverage-fill" style="width:'+Math.min(cov.pct,100)+'%;background:'+covColor+'"></div></div>'+
+      '</div>';
+    }
+  }
   var card=document.createElement('div');card.className='card';
-  card.innerHTML='<div class="card-name">'+escHtml(name)+'</div>'+
+  card.innerHTML='<div class="card-name">'+escHtml(name)+'</div>'+covHtml+
     '<div class="stats-grid">'+
       '<div class="stat-block"><span class="stat-val">'+rows.length+'</span><span class="stat-lbl">Interactions</span></div>'+
       '<div class="stat-block"><span class="stat-val">'+vendors.length+'</span><span class="stat-lbl">Vendors</span></div>'+
@@ -676,6 +787,7 @@ function goHome(){
   document.getElementById('crmSection').classList.add('dash-hidden');
   document.getElementById('dashSection').classList.add('dash-hidden');
   document.getElementById('actionsSection').classList.add('dash-hidden');
+  document.getElementById('coverageSection').classList.add('dash-hidden');
   document.getElementById('dashContent').classList.add('dash-hidden');
   var crmEls=['filterBar','summaryBar','progressWrap','grid','msg'];
   crmEls.forEach(function(id){var el=document.getElementById(id);if(el){el.style.display='none';el.className=el.className.replace(' show','');}});
@@ -683,6 +795,7 @@ function goHome(){
   document.getElementById('modeCrm').classList.remove('active');
   document.getElementById('modeDash').classList.remove('active');
   document.getElementById('modeActions').classList.remove('active');
+  document.getElementById('modeCoverage').classList.remove('active');
 }
 var currentMode='crm';
 function setMode(mode){
@@ -690,9 +803,11 @@ function setMode(mode){
   document.getElementById('modeCrm').classList.toggle('active',mode==='crm');
   document.getElementById('modeDash').classList.toggle('active',mode==='dash');
   document.getElementById('modeActions').classList.toggle('active',mode==='actions');
+  document.getElementById('modeCoverage').classList.toggle('active',mode==='coverage');
   document.getElementById('crmSection').classList.toggle('dash-hidden',mode!=='crm');
   document.getElementById('dashSection').classList.toggle('dash-hidden',mode!=='dash');
   document.getElementById('actionsSection').classList.toggle('dash-hidden',mode!=='actions');
+  document.getElementById('coverageSection').classList.toggle('dash-hidden',mode!=='coverage');
   // Hide CRM-specific sections when not in crm mode
   var crmEls=['filterBar','summaryBar','progressWrap','grid'];
   crmEls.forEach(function(id){
@@ -702,9 +817,126 @@ function setMode(mode){
   if(mode==='crm'){
     document.getElementById('modeSelect').style.display='';
     document.getElementById('dashContent').classList.add('dash-hidden');
+    // Load vendor DB from Firestore if not loaded
+    if(!vendorDb.length&&currentAccount){
+      fsGetVendorDb(currentAccount).then(function(vendors){
+        if(vendors.length){
+          vendorDb=vendors;
+          document.getElementById('vendorDbStatus').textContent=vendors.length+' vendors loaded';
+          if(allRows.length)renderCards();
+        }
+      }).catch(function(){});
+    }
   }
   if(mode==='dash')loadDashboardData();
   if(mode==='actions')loadPendingActions();
+  if(mode==='coverage')loadCoverageDashboard();
+}
+
+// === COVERAGE DASHBOARD ===
+function loadCoverageDashboard(){
+  document.getElementById('modeSelect').style.display='none';
+  var content=document.getElementById('coverageContent');
+  var empty=document.getElementById('coverageEmpty');
+
+  // Load vendor DB from Firestore if needed
+  var loadVendors=vendorDb.length?Promise.resolve(vendorDb):
+    (currentAccount?fsGetVendorDb(currentAccount):Promise.resolve([]));
+  var loadCrm=allRows.length?Promise.resolve(allRows):
+    (currentAccount?fsGetLatestCrmData(currentAccount).then(function(recs){
+      return recs.map(function(r){
+        if(r.date&&!(r.date instanceof Date)){r.date=r.date.toDate?r.date.toDate():new Date(r.date);}
+        if(r.actionDate&&!(r.actionDate instanceof Date)){r.actionDate=r.actionDate.toDate?r.actionDate.toDate():new Date(r.actionDate);}
+        return r;
+      });
+    }):Promise.resolve([]));
+
+  Promise.all([loadVendors,loadCrm]).then(function(results){
+    var vDb=results[0],crmRows=results[1];
+    if(vDb.length)vendorDb=vDb;
+    if(!vendorDb.length||!crmRows.length){
+      content.innerHTML='';empty.style.display='';return;
+    }
+    empty.style.display='none';
+    renderCoverageDashboard(crmRows);
+  });
+}
+
+function renderCoverageDashboard(crmRows){
+  // Group vendor DB by country
+  var vByCountry={};
+  vendorDb.forEach(function(v){
+    var c=normalizeCountry(v.country);
+    if(!c)return;
+    if(!vByCountry[c])vByCountry[c]=[];
+    vByCountry[c].push(v);
+  });
+
+  // Group CRM contacts by country
+  var crmByCountry={};
+  crmRows.forEach(function(r){
+    var c=normalizeCountry(r.site);
+    if(!c||!r.vendor)return;
+    if(!crmByCountry[c])crmByCountry[c]={vendors:{},statuses:{A:0,P:0,H:0,N:0}};
+    crmByCountry[c].vendors[r.vendor.toLowerCase()]=1;
+    var s=(r.status||'').toLowerCase();
+    if(s==='active')crmByCountry[c].statuses.A++;
+    else if(s==='potential')crmByCountry[c].statuses.P++;
+    else if(s==='hold')crmByCountry[c].statuses.H++;
+    else if(s==='no go'||s==='nogo')crmByCountry[c].statuses.N++;
+  });
+
+  var countries=Object.keys(vByCountry).sort();
+
+  // Summary KPIs
+  var totalVendors=vendorDb.length;
+  var totalContacted=0;
+  countries.forEach(function(c){
+    if(crmByCountry[c])totalContacted+=Object.keys(crmByCountry[c].vendors).length;
+  });
+  var totalPct=totalVendors?Math.round(totalContacted/totalVendors*100):0;
+
+  var html='<div class="kpi-row" style="margin-bottom:18px">';
+  html+='<div class="kpi-card" style="border-top-color:#6A1B9A"><div class="kpi-val">'+totalVendors+'</div><div class="kpi-lbl">Total Vendors (DB)</div></div>';
+  html+='<div class="kpi-card" style="border-top-color:var(--active)"><div class="kpi-val">'+totalContacted+'</div><div class="kpi-lbl">Vendors Contacted</div></div>';
+  html+='<div class="kpi-card" style="border-top-color:var(--red)"><div class="kpi-val">'+(totalVendors-totalContacted)+'</div><div class="kpi-lbl">Not Contacted</div></div>';
+  html+='<div class="kpi-card" style="border-top-color:var(--potential)"><div class="kpi-val">'+totalPct+'%</div><div class="kpi-lbl">Coverage Rate</div></div>';
+  html+='<div class="kpi-card"><div class="kpi-val">'+countries.length+'</div><div class="kpi-lbl">Countries</div></div>';
+  html+='</div>';
+
+  // Per-country cards
+  html+='<div class="cov-grid">';
+  countries.forEach(function(c){
+    var total=vByCountry[c].length;
+    var crm=crmByCountry[c];
+    var contacted=crm?Object.keys(crm.vendors).length:0;
+    var pct=total?Math.round(contacted/total*100):0;
+    var covColor=pct>=50?'var(--active)':pct>=25?'var(--hold)':'var(--red)';
+    var st=crm?crm.statuses:{A:0,P:0,H:0,N:0};
+
+    html+='<div class="cov-card">';
+    html+='<div class="cov-country">'+escHtml(c)+'</div>';
+    html+='<div style="display:flex;justify-content:space-between;align-items:baseline">';
+    html+='<span style="font-size:20px;font-weight:700;font-family:\'Space Mono\',monospace;color:'+covColor+'">'+contacted+'/'+total+'</span>';
+    html+='<span style="font-size:14px;font-weight:700;font-family:\'Space Mono\',monospace;color:'+covColor+'">'+pct+'%</span>';
+    html+='</div>';
+    html+='<div class="coverage-bar"><div class="coverage-fill" style="width:'+Math.min(pct,100)+'%;background:'+covColor+'"></div></div>';
+    html+='<div class="cov-stat"><span>Total in DB</span><span class="cov-stat-val">'+total+'</span></div>';
+    html+='<div class="cov-stat"><span>Contacted</span><span class="cov-stat-val" style="color:var(--active)">'+contacted+'</span></div>';
+    html+='<div class="cov-stat"><span>Not contacted</span><span class="cov-stat-val" style="color:var(--red)">'+(total-contacted)+'</span></div>';
+    if(contacted>0){
+      html+='<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">';
+      html+='<span class="s-badge s-a">'+st.A+'A</span>';
+      html+='<span class="s-badge s-p">'+st.P+'P</span>';
+      html+='<span class="s-badge s-h">'+st.H+'H</span>';
+      html+='<span class="s-badge s-n">'+st.N+'N</span>';
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+  html+='</div>';
+
+  document.getElementById('coverageContent').innerHTML=html;
 }
 
 // === ADMIN FILE INPUT (for Data tab) ===
